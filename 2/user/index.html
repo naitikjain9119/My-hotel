@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Panel - Food Delivery App</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            padding-bottom: 75px;
+        }
+
+        /* Top Header */
+        .top-header {
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            color: white;
+            padding: 12px 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-title-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-container {
+            margin-top: 10px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 20px;
+            outline: none;
+            font-size: 14px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Action & Filter Bar */
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 10px 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #ff4757;
+            outline: none;
+            color: #ff4757;
+            font-weight: bold;
+            background: #fff;
+        }
+
+        .buy-top-btn {
+            background-color: #2ed573;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(46, 213, 115, 0.4);
+        }
+
+        /* View Sections */
+        .view-section {
+            display: none;
+            padding: 15px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        /* Grid Layout */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+        }
+
+        .card-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+        }
+
+        .card-body {
+            padding: 12px;
+        }
+
+        /* Dish Card Layout */
+        .dish-card {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            padding: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dish-img {
+            width: 85px;
+            height: 85px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .dish-info {
+            flex: 1;
+        }
+
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .qty-btn {
+            background: #f1f2f6;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .claim-btn {
+            background-color: #ff4757;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Forms Styling */
+        .form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 450px;
+            margin: 10px auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            color: #57606f;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced6e0;
+            border-radius: 8px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: #ff4757;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background: #747d8c;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .link-btn {
+            color: #ff4757;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 13px;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #a4b0be;
+            font-size: 12px;
+            cursor: pointer;
+            width: 33.33%;
+        }
+
+        .nav-item.active {
+            color: #ff4757;
+            font-weight: bold;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+
+        /* Modal / Information Checkout Page */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .otp-box {
+            background: #f1f2f6;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: #ff4757;
+            font-size: 18px;
+            margin-top: 5px;
+        }
+
+        /* Delivery Notification Banner */
+        #delivered-coupon-banner {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #2ed573, #26af5f);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.25);
+            z-index: 3000;
+            font-weight: bold;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+    </style>
+
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+    <!-- Delivered Coupon Notification Banner -->
+    <div id="delivered-coupon-banner">
+        🎉 आपका order delivered हो चुका है! Coupon Notification Received.
+    </div>
+
+    <!-- Top Header Bar -->
+    <div class="top-header">
+        <div class="header-title-bar">
+            <h2 id="header-title" style="font-size: 18px;">Hotels & Restaurants</h2>
+            <button id="back-to-hotels-btn" style="display: none; background: white; color: #ff4757; border: none; padding: 5px 12px; border-radius: 15px; font-weight: bold; cursor: pointer;" onclick="showHotelsList()"><i class="fa-solid fa-arrow-left"></i> Hotels</button>
+        </div>
+        <div class="search-container">
+            <input type="text" id="main-search-input" class="search-input" placeholder="Search hotels or dishes..." onkeyup="executeSearch()">
+        </div>
+    </div>
+
+    <!-- Menu Page Filter & Buy Bar -->
+    <div id="dish-action-bar" class="action-bar" style="display: none;">
+        <div>
+            <select id="price-filter" class="filter-select" onchange="filterDishesByPrice()">
+                <option value="all">सब मूल्य (All Prices)</option>
+                <option value="50">₹50 के नीचे</option>
+                <option value="100">₹100 के नीचे</option>
+            </select>
+        </div>
+        <div style="font-size: 14px; font-weight: bold;">
+            Total Items: <span id="total-item-count">0</span>
+        </div>
+        <button class="buy-top-btn" onclick="openCheckoutModal()">
+            <i class="fa-solid fa-cart-shopping"></i> BUY
+        </button>
+    </div>
+
+    <!-- VIEW 1: HOMEPAGE (Hotels & Menu View) -->
+    <div id="view-home" class="view-section active">
+        <!-- Live Realtime Hotels Grid -->
+        <div id="hotel-list-container" class="grid-container"></div>
+
+        <!-- Live Realtime Dishes List -->
+        <div id="dish-list-container" style="display: none;"></div>
+    </div>
+
+    <!-- VIEW 2: ORDERS TRACKING -->
+    <div id="view-orders" class="view-section">
+        <h3 style="margin-bottom: 15px; color: #2f3542;"><i class="fa-solid fa-bag-shopping"></i> आपके Orders & Tracking</h3>
+        <div id="orders-list-container">
+            <p style="text-align: center; color: #777;">कोई ऑर्डर्स नहीं मिले।</p>
+        </div>
+    </div>
+
+    <!-- VIEW 3: PROFILE / LOGIN / REGISTER -->
+    <div id="view-profile" class="view-section">
+        
+        <!-- Logged In Profile View -->
+        <div id="logged-in-profile" class="form-container" style="display: none; text-align: center;">
+            <i class="fa-solid fa-circle-user" style="font-size: 60px; color: #ff4757; margin-bottom: 10px;"></i>
+            <h3 id="user-display-name">User Name</h3>
+            <p id="user-display-email" style="color: #666; margin-bottom: 8px;">user@email.com</p>
+            <button class="btn-primary" onclick="logoutUser()">Logout Account</button>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-form-container" class="form-container">
+            <h3 style="text-align: center; margin-bottom: 20px; color: #2f3542;">User Login</h3>
+            <div class="form-group">
+                <label>Email ID</label>
+                <input type="email" id="login-email" class="form-control" placeholder="Enter Email">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" class="form-control" placeholder="Enter Password">
+            </div>
+            <button class="btn-primary" onclick="loginUser()">ENTER</button>
+            <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                <button class="link-btn" onclick="forgotPassword()">Forget Password?</button>
+                <button class="link-btn" onclick="toggleAuthForm('register')">Create New ID</button>
+            </div>
+        </div>
+
+        <!-- Register Form (Create ID with OTP) -->
+        <div id="register-form-container" class="form-container" style="display: none;">
+            <h3 style="text-align: center; margin-bottom: 20px; color: #2f3542;">Create New ID</h3>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="reg-name" class="form-control" placeholder="Full Name">
+            </div>
+            <div class="form-group">
+                <label>Email ID</label>
+                <input type="email" id="reg-email" class="form-control" placeholder="Email Address">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="reg-password" class="form-control" placeholder="Password">
+            </div>
+            <div class="form-group">
+                <label>Mobile Number</label>
+                <input type="tel" id="reg-mobile" class="form-control" placeholder="10 Digit Mobile Number">
+            </div>
+            
+            <div class="form-group">
+                <button type="button" class="btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="sendRegistrationOTP()">Send OTP</button>
+            </div>
+
+            <div class="form-group" id="otp-field-group" style="display: none;">
+                <label>Enter Verification OTP</label>
+                <input type="text" id="reg-otp-input" class="form-control" placeholder="Enter 4-digit OTP">
+            </div>
+
+            <button class="btn-primary" onclick="verifyAndRegister()">ENTER & CREATE ID</button>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="link-btn" onclick="toggleAuthForm('login')">Already have an ID? Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- INFORMATION PAGE / CHECKOUT MODAL -->
+    <div id="checkout-modal" class="modal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3>Order Information & Details</h3>
+                <button style="border: none; background: none; font-size: 20px; cursor: pointer;" onclick="closeCheckoutModal()">✖</button>
+            </div>
+
+            <div id="checkout-summary-items" style="border-bottom: 1px dashed #ccc; padding-bottom: 10px; margin-bottom: 15px;"></div>
+
+            <div style="text-align: right; font-weight: bold; font-size: 18px; margin-bottom: 15px; color: #ff4757;">
+                Total Amount: ₹<span id="checkout-total-price">0</span>
+            </div>
+
+            <h4>Address Details</h4>
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Name</label>
+                <input type="text" id="checkout-name" class="form-control" placeholder="Person Name">
+            </div>
+            <div class="form-group">
+                <label>Street / House No.</label>
+                <input type="text" id="checkout-street" class="form-control" placeholder="Street Name">
+            </div>
+            <div class="form-group">
+                <label>Location</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="checkout-location" class="form-control" placeholder="Address / GPS Coordinates">
+                    <button type="button" class="btn-secondary" onclick="getGPSLocation()" style="white-space: nowrap;"><i class="fa-solid fa-location-crosshairs"></i> Current Location</button>
+                </div>
+            </div>
+
+            <button class="btn-primary" style="margin-top: 10px;" onclick="placeOrder()">Order Place</button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home')">
+            <i class="fa-solid fa-house"></i>
+            <span>Homepage</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('orders')">
+            <i class="fa-solid fa-bag-shopping"></i>
+            <span>Orders</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('profile')">
+            <i class="fa-solid fa-user"></i>
+            <span>Profile</span>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT MASTER CORE ENGINE (CONNECTED TO OWNER PANEL) -->
+    <script>
+        // 1. Firebase Configuration (Owner Panel वाली समान कॉन्फ़िगरेशन)
+        const firebaseConfig = {
+          apiKey: "AIzaSyDYh83XSYKVdUnKh1OgBzuPOJRb9kNTxno",
+          authDomain: "my-hotel-b7e45.firebaseapp.com",
+          projectId: "my-hotel-b7e45",
+          storageBucket: "my-hotel-b7e45.firebasestorage.app",
+          messagingSenderId: "766471367677",
+          appId: "1:766471367677:web:6cb895ceecd170185a4794"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Application Global Variables
+        let currentHotelId = null;
+        let cart = {}; // { dishId: { dish, qty } }
+        let hotelsData = [];
+        let dishesData = [];
+        let generatedRegOTP = null;
+        let ordersListenerUnsubscribe = null;
+        let dishesListenerUnsubscribe = null;
+
+        // On Page Load Initialization
+        window.onload = function() {
+            listenToAuth();
+            connectHotelsRealtime();
+        };
+
+        // --- AUTHENTICATION & PROFILE LOGIC ---
+        function listenToAuth() {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    document.getElementById('login-form-container').style.display = 'none';
+                    document.getElementById('register-form-container').style.display = 'none';
+                    document.getElementById('logged-in-profile').style.display = 'block';
+
+                    document.getElementById('user-display-email').innerText = user.email;
+                    document.getElementById('user-display-name').innerText = user.displayName || "User";
+                } else {
+                    document.getElementById('logged-in-profile').style.display = 'none';
+                    document.getElementById('login-form-container').style.display = 'block';
+                }
+            });
+        }
+
+        function loginUser() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+
+            if(!email || !pass) return alert("Email और Password भरें!");
+
+            auth.signInWithEmailAndPassword(email, pass)
+                .then(() => alert("Login सफल रहा!"))
+                .catch(err => alert("Login Error: " + err.message));
+        }
+
+        function forgotPassword() {
+            const email = prompt("Password reset करने के लिए अपना Email ID दर्ज करें:");
+            if (email) {
+                auth.sendPasswordResetEmail(email)
+                    .then(() => alert("Password reset link आपकी Email ID पर भेज दिया गया है।"))
+                    .catch(err => alert("Error: " + err.message));
+            }
+        }
+
+        function toggleAuthForm(form) {
+            if(form === 'register') {
+                document.getElementById('login-form-container').style.display = 'none';
+                document.getElementById('register-form-container').style.display = 'block';
+            } else {
+                document.getElementById('register-form-container').style.display = 'none';
+                document.getElementById('login-form-container').style.display = 'block';
+            }
+        }
+
+        function sendRegistrationOTP() {
+            const mobile = document.getElementById('reg-mobile').value;
+            if(!mobile || mobile.length < 10) return alert("सही Mobile Number भरें!");
+
+            generatedRegOTP = Math.floor(1000 + Math.random() * 9000).toString();
+            alert("आपका Verification OTP है: " + generatedRegOTP);
+            document.getElementById('otp-field-group').style.display = 'block';
+        }
+
+        function verifyAndRegister() {
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const mobile = document.getElementById('reg-mobile').value;
+            const userOTP = document.getElementById('reg-otp-input').value;
+
+            if(!name || !email || !password || !mobile) return alert("कृपया सभी जानकारी भरें!");
+            if(!generatedRegOTP || userOTP !== generatedRegOTP) return alert("गलत OTP दर्ज किया गया है!");
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(cred => cred.user.updateProfile({ displayName: name }))
+                .then(() => {
+                    alert("ID सफलतापूर्वक बन गई है!");
+                    toggleAuthForm('login');
+                })
+                .catch(err => alert("Registration Error: " + err.message));
+        }
+
+        function logoutUser() {
+            auth.signOut().then(() => alert("Logout सफल हुआ!"));
+        }
+
+        // --- REALTIME FIRESTORE SYNC (OWNER PANEL CONNECTION) ---
+        
+        // 1. Owner Panel द्वारा जोड़े गए Hotels को Realtime में पढ़ना
+        function connectHotelsRealtime() {
+            db.collection('hotels').where('hidden', '==', false).onSnapshot(snapshot => {
+                hotelsData = [];
+                snapshot.forEach(doc => {
+                    hotelsData.push({ id: doc.id, ...doc.data() });
+                });
+                renderHotels(hotelsData);
+            });
+        }
+
+        function renderHotels(list) {
+            const container = document.getElementById('hotel-list-container');
+            container.innerHTML = '';
+
+            if (list.length === 0) {
+                container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #777;">कोई Hotel उपलब्ध नहीं है।</p>`;
+                return;
+            }
+
+            list.forEach(hotel => {
+                container.innerHTML += `
+                    <div class="card" onclick="openHotel('${hotel.id}', '${hotel.name}')">
+                        <img src="${hotel.image}" class="card-img" alt="${hotel.name}">
+                        <div class="card-body">
+                            <div style="font-weight: bold; font-size: 16px;">${hotel.name}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openHotel(hotelId, hotelName) {
+            currentHotelId = hotelId;
+            document.getElementById('header-title').innerText = hotelName;
+            document.getElementById('back-to-hotels-btn').style.display = 'block';
+            document.getElementById('hotel-list-container').style.display = 'none';
+            document.getElementById('dish-list-container').style.display = 'block';
+            document.getElementById('dish-action-bar').style.display = 'flex';
+
+            connectDishesRealtime(hotelId);
+        }
+
+        function showHotelsList() {
+            currentHotelId = null;
+            if(dishesListenerUnsubscribe) dishesListenerUnsubscribe();
+            
+            document.getElementById('header-title').innerText = "Hotels & Restaurants";
+            document.getElementById('back-to-hotels-btn').style.display = 'none';
+            document.getElementById('dish-list-container').style.display = 'none';
+            document.getElementById('dish-action-bar').style.display = 'none';
+            document.getElementById('hotel-list-container').style.display = 'grid';
+        }
+
+        // 2. Owner Panel द्वारा जोड़े/री-ऑर्डर/छुपाए गए Dishes को Realtime में पढ़ना
+        function connectDishesRealtime(hotelId) {
+            if(dishesListenerUnsubscribe) dishesListenerUnsubscribe();
+
+            dishesListenerUnsubscribe = db.collection('dishes')
+                .where('hotelId', '==', hotelId)
+                .where('hidden', '==', false)
+                .onSnapshot(snapshot => {
+                    dishesData = [];
+                    snapshot.forEach(doc => {
+                        dishesData.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    // Owner द्वारा सेट किए गए क्रम (Order) के अनुसार Sort करना
+                    dishesData.sort((a, b) => (a.order || 0) - (b.order || 0));
+                    renderDishes(dishesData);
+                });
+        }
+
+        function renderDishes(list) {
+            const container = document.getElementById('dish-list-container');
+            container.innerHTML = '';
+
+            if (list.length === 0) {
+                container.innerHTML = `<p style="text-align: center; color: #777;">इस Hotel में कोई Dish उपलब्ध नहीं है।</p>`;
+                return;
+            }
+
+            list.forEach(dish => {
+                const qty = cart[dish.id] ? cart[dish.id].qty : 0;
+                container.innerHTML += `
+                    <div class="dish-card">
+                        <img src="${dish.image}" class="dish-img" alt="${dish.name}">
+                        <div class="dish-info">
+                            <div style="font-weight: bold; font-size: 16px;">${dish.name}</div>
+                            <div style="font-size: 12px; color: #777;">Category: ${dish.category || 'General'}</div>
+                            <div style="color: #ff4757; font-weight: bold; font-size: 15px; margin-top: 2px;">₹${dish.price}</div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                            <button class="claim-btn" onclick="addToCart('${dish.id}')">Claim Item</button>
+                            <div class="qty-controls">
+                                <button class="qty-btn" onclick="changeQty('${dish.id}', -1)">-</button>
+                                <span>${qty}</span>
+                                <button class="qty-btn" onclick="changeQty('${dish.id}', 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- CART & PRICE FILTER ENGINE ---
+        function addToCart(dishId) {
+            const dish = dishesData.find(d => d.id === dishId);
+            if(!dish) return;
+
+            if(!cart[dishId]) {
+                cart[dishId] = { dish: dish, qty: 1 };
+            } else {
+                cart[dishId].qty += 1;
+            }
+            updateCartCount();
+            renderDishes(dishesData);
+        }
+
+        function changeQty(dishId, delta) {
+            if(cart[dishId]) {
+                cart[dishId].qty += delta;
+                if(cart[dishId].qty <= 0) delete cart[dishId];
+                updateCartCount();
+                renderDishes(dishesData);
+            }
+        }
+
+        function updateCartCount() {
+            let totalQty = 0;
+            for(let id in cart) totalQty += cart[id].qty;
+            document.getElementById('total-item-count').innerText = totalQty;
+        }
+
+        function executeSearch() {
+            const query = document.getElementById('main-search-input').value.toLowerCase();
+            if(!currentHotelId) {
+                const filtered = hotelsData.filter(h => h.name.toLowerCase().includes(query));
+                renderHotels(filtered);
+            } else {
+                const filtered = dishesData.filter(d => 
+                    d.name.toLowerCase().includes(query) || 
+                    (d.category && d.category.toLowerCase().includes(query))
+                );
+                renderDishes(filtered);
+            }
+        }
+
+        function filterDishesByPrice() {
+            const value = document.getElementById('price-filter').value;
+            if(value === 'all') {
+                renderDishes(dishesData);
+            } else {
+                const maxPrice = parseFloat(value);
+                const filtered = dishesData.filter(d => d.price <= maxPrice);
+                renderDishes(filtered);
+            }
+        }
+
+        // --- CHECKOUT & GPS LOCATION LOGIC ---
+        function openCheckoutModal() {
+            let totalQty = 0;
+            let totalPrice = 0;
+            const container = document.getElementById('checkout-summary-items');
+            container.innerHTML = '';
+
+            for(let id in cart) {
+                const item = cart[id];
+                const itemTotal = item.dish.price * item.qty;
+                totalPrice += itemTotal;
+                totalQty += item.qty;
+
+                container.innerHTML += `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span>${item.dish.name} x ${item.qty}</span>
+                        <span>₹${itemTotal}</span>
+                    </div>
+                `;
+            }
+
+            if(totalQty === 0) return alert("कृपया पहले आइटम कार्ट में चुनें!");
+
+            document.getElementById('checkout-total-price').innerText = totalPrice;
+            const user = auth.currentUser;
+            if(user) document.getElementById('checkout-name').value = user.displayName || "";
+
+            document.getElementById('checkout-modal').style.display = 'flex';
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkout-modal').style.display = 'none';
+        }
+
+        function getGPSLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    document.getElementById('checkout-location').value = `GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                    alert("GPS करंट लोकेशन प्राप्त हो गई है!");
+                }, (err) => alert("GPS एरर: " + err.message));
+            } else {
+                alert("ब्राऊजर Geolocation सपोर्ट नहीं करता!");
+            }
+        }
+
+        function placeOrder() {
+            const name = document.getElementById('checkout-name').value;
+            const street = document.getElementById('checkout-street').value;
+            const location = document.getElementById('checkout-location').value;
+
+            if(!name || !street || !location) return alert("कृपया पूरी Address Details दर्ज करें!");
+
+            const itemsArray = [];
+            let totalPrice = 0;
+            for(let id in cart) {
+                itemsArray.push({
+                    name: cart[id].dish.name,
+                    qty: cart[id].qty,
+                    price: cart[id].dish.price
+                });
+                totalPrice += cart[id].dish.price * cart[id].qty;
+            }
+
+            const deliveryOTP = Math.floor(1000 + Math.random() * 9000).toString();
+
+            const orderData = {
+                userId: auth.currentUser ? auth.currentUser.uid : "guest",
+                userName: name,
+                userStreet: street,
+                userLocation: location,
+                items: itemsArray,
+                totalPrice: totalPrice,
+                status: "placed",
+                deliveryOTP: deliveryOTP,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            db.collection('orders').add(orderData).then(() => {
+                alert("Order Placed Successfully!");
+                cart = {};
+                updateCartCount();
+                closeCheckoutModal();
+                switchTab('orders');
+            }).catch(err => alert("Order Error: " + err.message));
+        }
+
+        // --- ORDERS TRACKING & DELIVERY NOTIFICATION ---
+        function loadOrders() {
+            const container = document.getElementById('orders-list-container');
+            if(ordersListenerUnsubscribe) ordersListenerUnsubscribe();
+
+            ordersListenerUnsubscribe = db.collection('orders').onSnapshot(snapshot => {
+                container.innerHTML = '';
+                let hasOrders = false;
+
+                snapshot.forEach(doc => {
+                    const order = doc.data();
+                    hasOrders = true;
+
+                    // यदि Delivery Boy द्वारा Status 'delivered' हो जाए, तो Coupon Notification ट्रिगर करें
+                    if (order.status === 'delivered') {
+                        showDeliveredNotification();
+                    }
+
+                    container.innerHTML += `
+                        <div class="card" style="padding: 15px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong>Order #${doc.id.substring(0, 6)}</strong>
+                                <span style="font-weight: bold; color: ${order.status === 'delivered' ? '#2ed573' : '#ff4757'};">
+                                    ${order.status ? order.status.toUpperCase() : 'PLACED'}
+                                </span>
+                            </div>
+                            <hr style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
+                            <div>Total Price: ₹${order.totalPrice}</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 4px;">Address: ${order.userStreet}, ${order.userLocation}</div>
+                            <div style="margin-top: 8px;">
+                                <span style="font-size: 12px; font-weight: bold;">Delivery Boy को बताने के लिए OTP:</span>
+                                <div class="otp-box">${order.deliveryOTP || '1234'}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                if(!hasOrders) {
+                    container.innerHTML = `<p style="text-align: center; color: #777;">कोई ऑर्डर्स नहीं मिले।</p>`;
+                }
+            });
+        }
+
+        function showDeliveredNotification() {
+            const banner = document.getElementById('delivered-coupon-banner');
+            banner.style.display = 'block';
+            setTimeout(() => banner.style.display = 'none', 6000);
+        }
+
+        // --- NAVIGATION TABS SWITCHING ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+
+            if (tabName === 'home') {
+                document.getElementById('view-home').classList.add('active');
+                document.querySelectorAll('.nav-item')[0].classList.add('active');
+            } else if (tabName === 'orders') {
+                document.getElementById('view-orders').classList.add('active');
+                document.querySelectorAll('.nav-item')[1].classList.add('active');
+                loadOrders();
+            } else if (tabName === 'profile') {
+                document.getElementById('view-profile').classList.add('active');
+                document.querySelectorAll('.nav-item')[2].classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
