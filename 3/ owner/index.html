@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owner Panel - Hotel Order</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #333; max-width: 480px; margin: 0 auto; min-height: 100vh; }
+  .top-bar { background: linear-gradient(135deg, #7b2ff7, #f107a3); color: white; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(123,47,247,0.4); }
+  .top-bar h1 { font-size: 18px; font-weight: 700; }
+  .logout-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+  .content { padding: 16px; padding-bottom: 90px; background: #f5f5f5; min-height: calc(100vh - 60px); }
+  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 6px; cursor: pointer; border: none; background: none; color: #999; font-size: 11px; }
+  .nav-btn.active { color: #7b2ff7; }
+  .nav-btn span { font-size: 22px; margin-bottom: 2px; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .auth-container { background: white; border-radius: 16px; padding: 28px 24px; margin: 30px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+  .auth-container h2 { font-size: 22px; font-weight: 700; background: linear-gradient(135deg,#7b2ff7,#f107a3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; text-align: center; }
+  .auth-container p { font-size: 13px; color: #888; text-align: center; margin-bottom: 24px; }
+  .input-group { margin-bottom: 16px; }
+  .input-group label { font-size: 13px; color: #555; font-weight: 600; display: block; margin-bottom: 6px; }
+  .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 11px 14px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 14px; outline: none; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: #7b2ff7; }
+  .btn-primary { width: 100%; padding: 13px; background: linear-gradient(135deg,#7b2ff7,#f107a3); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+  .btn-danger { background: #e53935; color: white; border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px; cursor: pointer; }
+  .btn-edit { background: #1565c0; color: white; border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px; cursor: pointer; }
+  .btn-sm { padding: 6px 10px; border-radius: 8px; border: none; font-size: 12px; cursor: pointer; color: white; }
+  .btn-hide { background: #ff8f00; }
+  .btn-show { background: #00897b; }
+  .btn-ban { background: #e53935; }
+  .btn-unban { background: #43a047; }
+  .section-title { font-size: 16px; font-weight: 700; color: #222; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #7b2ff7; }
+  .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .card-title { font-size: 15px; font-weight: 700; color: #222; }
+  .card-subtitle { font-size: 12px; color: #888; }
+  .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .hotel-img { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; justify-content: center; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: white; border-radius: 20px 20px 0 0; padding: 24px 20px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+  .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; color: #222; }
+  .modal-close { float: right; background: #f0f0f0; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 18px; cursor: pointer; }
+  .drag-handle { font-size: 18px; cursor: grab; color: #bbb; padding: 0 8px; }
+  .dish-row { display: flex; align-items: center; gap: 10px; background: white; border-radius: 10px; padding: 10px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .dish-num { font-size: 12px; font-weight: 700; color: #7b2ff7; min-width: 24px; text-align: center; }
+  .dish-thumb { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; }
+  .dish-info-mini { flex: 1; }
+  .dish-info-mini .d-name { font-size: 14px; font-weight: 600; }
+  .dish-info-mini .d-price { font-size: 13px; color: #7b2ff7; font-weight: 700; }
+  .badge { font-size: 11px; padding: 3px 8px; border-radius: 10px; font-weight: 600; }
+  .badge-active { background: #d4edda; color: #155724; }
+  .badge-hidden { background: #f8d7da; color: #721c24; }
+  .badge-banned { background: #f8d7da; color: #721c24; }
+  .badge-normal { background: #d4edda; color: #155724; }
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .empty-state { text-align: center; padding: 40px 20px; color: #bbb; }
+  .empty-state span { font-size: 40px; display: block; margin-bottom: 8px; }
+  .current-cred { background: #f0e6ff; border: 1px solid #ce93d8; border-radius: 10px; padding: 12px; margin-bottom: 12px; font-size: 13px; color: #6a1b9a; }
+  .profile-link-item { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .profile-link-item:last-child { border-bottom: none; }
+  .profile-link-item input { flex: 1; padding: 8px 10px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 13px; outline: none; }
+  .social-icon { font-size: 22px; min-width: 32px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab { flex: 1; padding: 8px; border: 1.5px solid #e0e0e0; border-radius: 10px; background: white; font-size: 13px; cursor: pointer; text-align: center; color: #888; }
+  .tab.active { background: linear-gradient(135deg,#7b2ff7,#f107a3); color: white; border-color: transparent; font-weight: 700; }
+  .move-btn { background: #e0e0e0; border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN PAGE -->
+<div class="page active" id="page-login">
+  <div class="top-bar"><h1>👑 Owner Panel</h1><div></div></div>
+  <div style="padding: 30px 16px 0; text-align:center;">
+    <div style="font-size:64px; margin-bottom:8px;">👑</div>
+    <h2 style="font-size:22px; font-weight:800; background:linear-gradient(135deg,#7b2ff7,#f107a3); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Owner Login</h2>
+    <p style="font-size:13px; color:#ccc; margin-top:4px;">Private Access Only</p>
+  </div>
+  <div class="auth-container">
+    <h2>Owner Login</h2>
+    <p>Owner ID और Password डालें</p>
+    <div class="input-group">
+      <label>Owner Email</label>
+      <input type="email" id="owner-email" placeholder="Owner Email" value="naitikjain240725@gmail.com">
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" id="owner-password" placeholder="Password" value="jain6799">
+    </div>
+    <button class="btn-primary" onclick="loginOwner()">Login करें →</button>
+  </div>
+</div>
+
+<!-- MAIN PANEL -->
+<div class="page" id="page-main">
+  <div class="top-bar">
+    <h1>👑 Owner Panel</h1>
+    <button class="logout-btn" onclick="logoutOwner()">Logout</button>
+  </div>
+
+  <!-- HOME TAB -->
+  <div class="page active" id="tab-home">
+    <div class="content">
+      <div class="section-title">🏨 Hotels Management</div>
+      <button class="btn-primary" style="margin-bottom:16px" onclick="openAddHotelModal()">+ नई Hotel Add करें</button>
+      <div id="hotels-list"><div style="text-align:center;color:#888;padding:20px">Hotels लोड हो रही हैं...</div></div>
+    </div>
+  </div>
+
+  <!-- PASSWORDS TAB -->
+  <div class="page" id="tab-passwords">
+    <div class="content">
+      <div class="section-title">🔐 Passwords Management</div>
+      <div class="tabs">
+        <button class="tab active" onclick="switchPwTab('host')">Host</button>
+        <button class="tab" onclick="switchPwTab('delivery')">Delivery Boy</button>
+        <button class="tab" onclick="switchPwTab('owner')">Owner</button>
+      </div>
+      <!-- Host -->
+      <div id="pw-host">
+        <button class="btn-primary" style="margin-bottom:14px" onclick="openCreateModal('host')">+ Host ID बनाएं</button>
+        <div id="hosts-list"></div>
+      </div>
+      <!-- Delivery -->
+      <div id="pw-delivery" style="display:none">
+        <button class="btn-primary" style="margin-bottom:14px" onclick="openCreateModal('delivery')">+ Delivery Boy ID बनाएं</button>
+        <div id="delivery-list"></div>
+      </div>
+      <!-- Owner Password Change -->
+      <div id="pw-owner" style="display:none">
+        <div class="card">
+          <div class="section-title">Owner Password Change</div>
+          <div class="current-cred" id="owner-current-cred">Current Email और Password load हो रहा है...</div>
+          <div class="input-group">
+            <label>नया Email</label>
+            <input type="email" id="new-owner-email" placeholder="नया Email">
+          </div>
+          <div class="input-group">
+            <label>नया Password</label>
+            <input type="password" id="new-owner-password" placeholder="नया Password (min 6 chars)">
+          </div>
+          <button class="btn-primary" onclick="changeOwnerPassword()">Password Change करें</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE TAB -->
+  <div class="page" id="tab-profile">
+    <div class="content">
+      <div class="section-title">👤 Profile / About</div>
+      <div class="card">
+        <div class="input-group">
+          <label>Owner / Restaurant नाम</label>
+          <input type="text" id="profile-name" placeholder="नाम">
+        </div>
+        <div class="input-group">
+          <label>Profile Image URL</label>
+          <input type="url" id="profile-image" placeholder="Image URL">
+        </div>
+        <div class="input-group">
+          <label>About / Description</label>
+          <textarea id="profile-about" rows="3" placeholder="Details..."></textarea>
+        </div>
+        <div class="section-title" style="margin-top:8px">Social Links</div>
+        <div class="profile-link-item">
+          <span class="social-icon">💬</span>
+          <input type="url" id="link-whatsapp" placeholder="WhatsApp link">
+        </div>
+        <div class="profile-link-item">
+          <span class="social-icon">📸</span>
+          <input type="url" id="link-instagram" placeholder="Instagram link">
+        </div>
+        <div class="profile-link-item">
+          <span class="social-icon">✈️</span>
+          <input type="url" id="link-telegram" placeholder="Telegram link">
+        </div>
+        <div class="profile-link-item">
+          <span class="social-icon">🐦</span>
+          <input type="url" id="link-twitter" placeholder="Twitter link">
+        </div>
+        <button class="btn-primary" style="margin-top:14px" onclick="saveProfile()">Profile Save करें</button>
+      </div>
+      <!-- Social Buttons Preview -->
+      <div class="card" id="social-preview" style="display:none">
+        <div class="section-title">Social Links</div>
+        <div id="social-btns"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchOwnerTab('home')"><span>🏠</span>Homepage</button>
+    <button class="nav-btn" onclick="switchOwnerTab('passwords')"><span>🔐</span>Passwords</button>
+    <button class="nav-btn" onclick="switchOwnerTab('profile')"><span>👤</span>Profile</button>
+  </div>
+</div>
+
+<!-- HOTEL DETAIL PAGE -->
+<div class="page" id="page-hotel-detail">
+  <div class="top-bar">
+    <button style="background:none;border:none;color:white;font-size:22px;cursor:pointer" onclick="backToHotels()">←</button>
+    <h1 id="hotel-detail-title">Hotel</h1>
+    <div></div>
+  </div>
+  <div class="content" style="background:#f5f5f5;min-height:100vh">
+    <div class="section-title">🍽️ Dishes</div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchDishTab('list')">Dishes List</button>
+      <button class="tab" onclick="switchDishTab('add')">+ Add Dish</button>
+    </div>
+    <!-- Dishes List -->
+    <div id="dish-tab-list">
+      <div id="dishes-list-owner"></div>
+    </div>
+    <!-- Add/Edit Dish Form -->
+    <div id="dish-tab-add" style="display:none">
+      <div class="card">
+        <h3 style="margin-bottom:14px" id="dish-form-title">नई Dish Add करें</h3>
+        <input type="hidden" id="editing-dish-id">
+        <div class="input-group">
+          <label>Dish Name (Category Title, e.g. Pizza)</label>
+          <input type="text" id="dish-name" placeholder="जैसे: Pizza, Burger">
+        </div>
+        <div class="input-group">
+          <label>Variety/Sub-name (e.g. Cheese Pizza)</label>
+          <input type="text" id="dish-variety" placeholder="जैसे: Cheese Pizza">
+        </div>
+        <div class="input-group">
+          <label>Image URL</label>
+          <input type="url" id="dish-image" placeholder="https://...">
+        </div>
+        <div class="input-group">
+          <label>Price (₹)</label>
+          <input type="number" id="dish-price" placeholder="जैसे: 150">
+        </div>
+        <button class="btn-primary" onclick="saveDish()">Dish Save करें ✅</button>
+        <button class="btn-primary" style="background:#888;margin-top:8px" onclick="cancelEditDish()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD HOTEL MODAL -->
+<div class="modal-overlay" id="modal-add-hotel">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-add-hotel')">×</button>
+    <h3 id="hotel-modal-title">🏨 Hotel Add करें</h3>
+    <input type="hidden" id="editing-hotel-id">
+    <div class="input-group">
+      <label>Hotel नाम</label>
+      <input type="text" id="m-hotel-name" placeholder="Hotel का नाम">
+    </div>
+    <div class="input-group">
+      <label>Image URL</label>
+      <input type="url" id="m-hotel-image" placeholder="https://...image.jpg">
+    </div>
+    <div class="input-group">
+      <label>Description</label>
+      <input type="text" id="m-hotel-desc" placeholder="छोटा विवरण">
+    </div>
+    <button class="btn-primary" onclick="saveHotel()">Hotel Save करें ✅</button>
+  </div>
+</div>
+
+<!-- CREATE HOST/DELIVERY MODAL -->
+<div class="modal-overlay" id="modal-create-user">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-create-user')">×</button>
+    <h3 id="create-user-title">नई ID बनाएं</h3>
+    <input type="hidden" id="create-user-type">
+    <input type="hidden" id="editing-user-id">
+    <div class="input-group">
+      <label>नाम</label>
+      <input type="text" id="new-user-name" placeholder="नाम">
+    </div>
+    <div class="input-group">
+      <label>Email (ID)</label>
+      <input type="email" id="new-user-email" placeholder="Email ID">
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" id="new-user-password" placeholder="Password (min 6)">
+    </div>
+    <button class="btn-primary" onclick="createOrUpdateUser()">Save करें ✅</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword, updatePassword, updateEmail, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDYh83XSYKVdUnKh1OgBzuPOJRb9kNTxno",
+  authDomain: "my-hotel-b7e45.firebaseapp.com",
+  projectId: "my-hotel-b7e45",
+  storageBucket: "my-hotel-b7e45.firebasestorage.app",
+  messagingSenderId: "766471367677",
+  appId: "1:766471367677:web:6cb895ceecd170185a4794"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const OWNER_EMAIL = 'naitikjain240725@gmail.com';
+const OWNER_PASS = 'jain6799';
+
+let currentOwner = null;
+let currentHotelId = null;
+let allDishesOwner = [];
+
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
+
+// Owner login
+window.loginOwner = async function() {
+  const email = document.getElementById('owner-email').value.trim();
+  const pass = document.getElementById('owner-password').value;
+  if (!email || !pass) return showToast('Email और Password डालें');
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    currentOwner = cred.user;
+    showPage('page-main');
+    document.getElementById('tab-home').classList.add('active');
+    loadHotels();
+    showToast('✅ Owner Login सफल!');
+  } catch (e) {
+    showToast('❌ Login failed: ' + e.message);
+  }
+};
+
+window.logoutOwner = async function() {
+  await signOut(auth);
+  currentOwner = null;
+  showPage('page-login');
+  showToast('Logout हो गए');
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (user && user.email === OWNER_EMAIL) {
+    currentOwner = user;
+    showPage('page-main');
+    document.getElementById('tab-home').classList.add('active');
+    loadHotels();
+  }
+});
+
+// TAB SWITCHING
+window.switchOwnerTab = function(tab) {
+  const tabs = ['home', 'passwords', 'profile'];
+  const tabIds = ['tab-home', 'tab-passwords', 'tab-profile'];
+  tabs.forEach((t, i) => {
+    document.getElementById(tabIds[i]).classList.toggle('active', t === tab);
+    document.querySelectorAll('.bottom-nav .nav-btn')[i].classList.toggle('active', t === tab);
+  });
+  if (tab === 'home') loadHotels();
+  else if (tab === 'passwords') { loadHosts(); loadDeliveryBoys(); loadOwnerCreds(); }
+  else if (tab === 'profile') loadProfile();
+};
+
+// ===== HOTELS =====
+async function loadHotels() {
+  const list = document.getElementById('hotels-list');
+  list.innerHTML = '<div style="text-align:center;color:#888;padding:20px">Load हो रहा है...</div>';
+  const snap = await getDocs(collection(db, 'hotels'));
+  const hotels = [];
+  snap.forEach(d => hotels.push({ id: d.id, ...d.data() }));
+  if (!hotels.length) { list.innerHTML = '<div class="empty-state"><span>🏨</span>कोई Hotel नहीं</div>'; return; }
+  list.innerHTML = hotels.map(h => `
+    <div class="card">
+      <div class="card-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <img class="hotel-img" src="${h.imageUrl || 'https://via.placeholder.com/60?text=H'}" onerror="this.src='https://via.placeholder.com/60?text=H'" alt="">
+          <div>
+            <div class="card-title">${h.name}</div>
+            <div class="card-subtitle">${h.description || ''}</div>
+            <span class="badge ${h.hidden ? 'badge-hidden' : 'badge-active'}">${h.hidden ? '🙈 Hidden' : '👁️ Visible'}</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-edit btn-sm" onclick="editHotel('${h.id}')">✏️ Edit</button>
+        <button class="btn-sm ${h.hidden ? 'btn-show' : 'btn-hide'}" onclick="toggleHotelVisibility('${h.id}', ${h.hidden})">${h.hidden ? '👁️ Show' : '🙈 Hide'}</button>
+        <button class="btn-sm" style="background:#5c35d1;color:white" onclick="openHotelDetail('${h.id}', '${h.name.replace(/'/g, "\\'")}')">🍽️ Dishes</button>
+        <button class="btn-danger btn-sm" onclick="deleteHotel('${h.id}')">🗑️ Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.openAddHotelModal = function() {
+  document.getElementById('editing-hotel-id').value = '';
+  document.getElementById('m-hotel-name').value = '';
+  document.getElementById('m-hotel-image').value = '';
+  document.getElementById('m-hotel-desc').value = '';
+  document.getElementById('hotel-modal-title').textContent = '🏨 Hotel Add करें';
+  document.getElementById('modal-add-hotel').classList.add('active');
+};
+
+window.editHotel = async function(hotelId) {
+  const d = await getDoc(doc(db, 'hotels', hotelId));
+  const h = d.data();
+  document.getElementById('editing-hotel-id').value = hotelId;
+  document.getElementById('m-hotel-name').value = h.name || '';
+  document.getElementById('m-hotel-image').value = h.imageUrl || '';
+  document.getElementById('m-hotel-desc').value = h.description || '';
+  document.getElementById('hotel-modal-title').textContent = '✏️ Hotel Edit करें';
+  document.getElementById('modal-add-hotel').classList.add('active');
+};
+
+window.saveHotel = async function() {
+  const id = document.getElementById('editing-hotel-id').value;
+  const name = document.getElementById('m-hotel-name').value.trim();
+  const imageUrl = document.getElementById('m-hotel-image').value.trim();
+  const description = document.getElementById('m-hotel-desc').value.trim();
+  if (!name) return showToast('Hotel नाम डालें');
+  try {
+    if (id) {
+      await updateDoc(doc(db, 'hotels', id), { name, imageUrl, description });
+      showToast('✅ Hotel update हो गई');
+    } else {
+      await addDoc(collection(db, 'hotels'), { name, imageUrl, description, hidden: false, createdAt: serverTimestamp() });
+      showToast('✅ Hotel add हो गई');
+    }
+    closeModal('modal-add-hotel');
+    loadHotels();
+  } catch (e) { showToast('❌ Error: ' + e.message); }
+};
+
+window.toggleHotelVisibility = async function(id, current) {
+  await updateDoc(doc(db, 'hotels', id), { hidden: !current });
+  showToast(current ? '✅ Hotel अब visible है' : '🙈 Hotel hide हो गई');
+  loadHotels();
+};
+
+window.deleteHotel = async function(id) {
+  if (!confirm('Hotel delete करें?')) return;
+  await deleteDoc(doc(db, 'hotels', id));
+  showToast('🗑️ Hotel delete हो गई');
+  loadHotels();
+};
+
+// ===== HOTEL DETAIL / DISHES =====
+window.openHotelDetail = function(hotelId, hotelName) {
+  currentHotelId = hotelId;
+  document.getElementById('hotel-detail-title').textContent = hotelName;
+  showPage('page-hotel-detail');
+  document.getElementById('dish-tab-list').style.display = '';
+  document.getElementById('dish-tab-add').style.display = 'none';
+  document.querySelectorAll('#page-hotel-detail .tab').forEach((t,i) => t.classList.toggle('active', i===0));
+  loadDishesOwner();
+};
+
+window.backToHotels = function() {
+  showPage('page-main');
+  document.getElementById('tab-home').classList.add('active');
+};
+
+window.switchDishTab = function(tab) {
+  document.getElementById('dish-tab-list').style.display = tab === 'list' ? '' : 'none';
+  document.getElementById('dish-tab-add').style.display = tab === 'add' ? '' : 'none';
+  document.querySelectorAll('#page-hotel-detail .tab').forEach((t,i) => t.classList.toggle('active', (tab==='list'&&i===0)||(tab==='add'&&i===1)));
+  if (tab === 'add') {
+    document.getElementById('editing-dish-id').value = '';
+    document.getElementById('dish-name').value = '';
+    document.getElementById('dish-variety').value = '';
+    document.getElementById('dish-image').value = '';
+    document.getElementById('dish-price').value = '';
+    document.getElementById('dish-form-title').textContent = 'नई Dish Add करें';
+  }
+};
+
+async function loadDishesOwner() {
+  const list = document.getElementById('dishes-list-owner');
+  list.innerHTML = '<div style="text-align:center;color:#888;padding:20px">Dishes load हो रही हैं...</div>';
+  const snap = await getDocs(collection(db, 'hotels', currentHotelId, 'dishes'));
+  allDishesOwner = [];
+  snap.forEach(d => allDishesOwner.push({ id: d.id, ...d.data() }));
+  allDishesOwner.sort((a, b) => (a.order || 0) - (b.order || 0));
+  renderDishesOwner();
+}
+
+function renderDishesOwner() {
+  const list = document.getElementById('dishes-list-owner');
+  if (!allDishesOwner.length) { list.innerHTML = '<div class="empty-state"><span>🍽️</span>कोई Dish नहीं</div>'; return; }
+  list.innerHTML = allDishesOwner.map((d, idx) => `
+    <div class="dish-row" id="drow-${d.id}">
+      <span class="dish-num">${idx + 1}</span>
+      <img class="dish-thumb" src="${d.imageUrl || 'https://via.placeholder.com/50?text=D'}" onerror="this.src='https://via.placeholder.com/50?text=D'" alt="">
+      <div class="dish-info-mini">
+        <div class="d-name">${d.name}${d.variety ? ' — ' + d.variety : ''}</div>
+        <div class="d-price">₹${d.price}</div>
+        <span class="badge ${d.hidden ? 'badge-hidden' : 'badge-active'}">${d.hidden ? 'Hidden' : 'Visible'}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+        <div style="display:flex;gap:4px">
+          <button class="move-btn" onclick="moveDish(${idx}, -1)" ${idx===0?'disabled':''}>↑</button>
+          <button class="move-btn" onclick="moveDish(${idx}, 1)" ${idx===allDishesOwner.length-1?'disabled':''}>↓</button>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn-sm btn-edit" onclick="editDish('${d.id}')">✏️</button>
+          <button class="btn-sm ${d.hidden ? 'btn-show' : 'btn-hide'}" onclick="toggleDish('${d.id}', ${d.hidden})">${d.hidden ? '👁️' : '🙈'}</button>
+          <button class="btn-sm btn-danger" onclick="deleteDish('${d.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.moveDish = async function(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= allDishesOwner.length) return;
+  [allDishesOwner[idx], allDishesOwner[newIdx]] = [allDishesOwner[newIdx], allDishesOwner[idx]];
+  for (let i = 0; i < allDishesOwner.length; i++) {
+    await updateDoc(doc(db, 'hotels', currentHotelId, 'dishes', allDishesOwner[i].id), { order: i });
+    allDishesOwner[i].order = i;
+  }
+  renderDishesOwner();
+};
+
+window.editDish = function(dishId) {
+  const d = allDishesOwner.find(x => x.id === dishId);
+  if (!d) return;
+  document.getElementById('editing-dish-id').value = dishId;
+  document.getElementById('dish-name').value = d.name || '';
+  document.getElementById('dish-variety').value = d.variety || '';
+  document.getElementById('dish-image').value = d.imageUrl || '';
+  document.getElementById('dish-price').value = d.price || '';
+  document.getElementById('dish-form-title').textContent = 'Dish Edit करें';
+  switchDishTab('add');
+};
+
+window.cancelEditDish = function() {
+  document.getElementById('editing-dish-id').value = '';
+  switchDishTab('list');
+};
+
+window.saveDish = async function() {
+  const editingId = document.getElementById('editing-dish-id').value;
+  const name = document.getElementById('dish-name').value.trim();
+  const variety = document.getElementById('dish-variety').value.trim();
+  const imageUrl = document.getElementById('dish-image').value.trim();
+  const price = parseFloat(document.getElementById('dish-price').value);
+  if (!name || !price) return showToast('Dish नाम और Price डालें');
+  try {
+    if (editingId) {
+      await updateDoc(doc(db, 'hotels', currentHotelId, 'dishes', editingId), { name, variety, imageUrl, price });
+      showToast('✅ Dish update हो गई');
+    } else {
+      const order = allDishesOwner.length;
+      await addDoc(collection(db, 'hotels', currentHotelId, 'dishes'), { name, variety, imageUrl, price, hidden: false, order, createdAt: serverTimestamp() });
+      showToast('✅ Dish add हो गई');
+    }
+    await loadDishesOwner();
+    switchDishTab('list');
+  } catch (e) { showToast('❌ Error: ' + e.message); }
+};
+
+window.toggleDish = async function(id, current) {
+  await updateDoc(doc(db, 'hotels', currentHotelId, 'dishes', id), { hidden: !current });
+  await loadDishesOwner();
+  showToast(current ? '👁️ Dish visible' : '🙈 Dish hidden');
+};
+
+window.deleteDish = async function(id) {
+  if (!confirm('Dish delete करें?')) return;
+  await deleteDoc(doc(db, 'hotels', currentHotelId, 'dishes', id));
+  await loadDishesOwner();
+  showToast('🗑️ Dish delete हो गई');
+};
+
+// ===== PASSWORDS =====
+window.switchPwTab = function(tab) {
+  document.querySelectorAll('#tab-passwords .tab').forEach((t, i) => t.classList.toggle('active', ['host','delivery','owner'][i] === tab));
+  document.getElementById('pw-host').style.display = tab === 'host' ? '' : 'none';
+  document.getElementById('pw-delivery').style.display = tab === 'delivery' ? '' : 'none';
+  document.getElementById('pw-owner').style.display = tab === 'owner' ? '' : 'none';
+};
+
+window.openCreateModal = function(type, existingId = '') {
+  document.getElementById('create-user-type').value = type;
+  document.getElementById('editing-user-id').value = existingId;
+  document.getElementById('create-user-title').textContent = type === 'host' ? '🏨 Host ID बनाएं' : '🚴 Delivery Boy ID बनाएं';
+  document.getElementById('new-user-name').value = '';
+  document.getElementById('new-user-email').value = '';
+  document.getElementById('new-user-password').value = '';
+  document.getElementById('modal-create-user').classList.add('active');
+};
+
+window.createOrUpdateUser = async function() {
+  const type = document.getElementById('create-user-type').value;
+  const name = document.getElementById('new-user-name').value.trim();
+  const email = document.getElementById('new-user-email').value.trim();
+  const pass = document.getElementById('new-user-password').value;
+  if (!name || !email || !pass) return showToast('सभी details भरें');
+  const collName = type === 'host' ? 'hosts' : 'deliveryBoys';
+  try {
+    const newCred = await createUserWithEmailAndPassword(auth, email, pass);
+    await setDoc(doc(db, collName, newCred.user.uid), { name, email, password: pass, banned: false, createdAt: serverTimestamp() });
+    // Re-login as owner
+    await signInWithEmailAndPassword(auth, OWNER_EMAIL, OWNER_PASS);
+    showToast('✅ ID बन गई!');
+    closeModal('modal-create-user');
+    if (type === 'host') loadHosts();
+    else loadDeliveryBoys();
+  } catch (e) { showToast('❌ Error: ' + e.message); }
+};
+
+async function loadHosts() {
+  const list = document.getElementById('hosts-list');
+  list.innerHTML = '<div style="color:#888;font-size:13px;padding:10px">Load हो रहा है...</div>';
+  const snap = await getDocs(collection(db, 'hosts'));
+  const hosts = [];
+  snap.forEach(d => hosts.push({ uid: d.id, ...d.data() }));
+  if (!hosts.length) { list.innerHTML = '<div class="empty-state" style="padding:20px"><span>👤</span>कोई Host नहीं</div>'; return; }
+  list.innerHTML = hosts.map(h => `
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:14px;font-weight:700">${h.name}</div>
+          <div style="font-size:12px;color:#888">${h.email}</div>
+          <span class="badge ${h.banned ? 'badge-banned' : 'badge-normal'}">${h.banned ? '🚫 Banned' : '✅ Active'}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <button class="btn-sm ${h.banned ? 'btn-unban' : 'btn-ban'}" onclick="toggleBan('hosts','${h.uid}',${h.banned})">${h.banned ? '✅ Unban' : '🚫 Ban'}</button>
+          <button class="btn-danger btn-sm" onclick="deleteUser('hosts','${h.uid}')">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function loadDeliveryBoys() {
+  const list = document.getElementById('delivery-list');
+  list.innerHTML = '<div style="color:#888;font-size:13px;padding:10px">Load हो रहा है...</div>';
+  const snap = await getDocs(collection(db, 'deliveryBoys'));
+  const boys = [];
+  snap.forEach(d => boys.push({ uid: d.id, ...d.data() }));
+  if (!boys.length) { list.innerHTML = '<div class="empty-state" style="padding:20px"><span>🚴</span>कोई Delivery Boy नहीं</div>'; return; }
+  list.innerHTML = boys.map(b => `
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:14px;font-weight:700">${b.name}</div>
+          <div style="font-size:12px;color:#888">${b.email}</div>
+          <span class="badge ${b.banned ? 'badge-banned' : 'badge-normal'}">${b.banned ? '🚫 Banned' : '✅ Active'}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <button class="btn-sm ${b.banned ? 'btn-unban' : 'btn-ban'}" onclick="toggleBan('deliveryBoys','${b.uid}',${b.banned})">${b.banned ? '✅ Unban' : '🚫 Ban'}</button>
+          <button class="btn-danger btn-sm" onclick="deleteUser('deliveryBoys','${b.uid}')">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.toggleBan = async function(col, uid, current) {
+  await updateDoc(doc(db, col, uid), { banned: !current });
+  showToast(current ? '✅ Unban हो गया' : '🚫 Ban हो गया');
+  if (col === 'hosts') loadHosts(); else loadDeliveryBoys();
+};
+
+window.deleteUser = async function(col, uid) {
+  if (!confirm('Delete करें?')) return;
+  await deleteDoc(doc(db, col, uid));
+  showToast('🗑️ Delete हो गया');
+  if (col === 'hosts') loadHosts(); else loadDeliveryBoys();
+};
+
+async function loadOwnerCreds() {
+  if (currentOwner) {
+    document.getElementById('owner-current-cred').innerHTML = `<b>Current Email:</b> ${currentOwner.email}`;
+    document.getElementById('new-owner-email').value = currentOwner.email;
+  }
+}
+
+window.changeOwnerPassword = async function() {
+  const newEmail = document.getElementById('new-owner-email').value.trim();
+  const newPass = document.getElementById('new-owner-password').value;
+  if (!newEmail && !newPass) return showToast('नया Email या Password डालें');
+  try {
+    if (newPass && newPass.length >= 6) await updatePassword(currentOwner, newPass);
+    if (newEmail && newEmail !== currentOwner.email) await updateEmail(currentOwner, newEmail);
+    showToast('✅ Password/Email change हो गया');
+    loadOwnerCreds();
+  } catch (e) { showToast('❌ ' + e.message + ' (Re-login करें)'); }
+};
+
+// ===== PROFILE =====
+async function loadProfile() {
+  const snap = await getDoc(doc(db, 'ownerProfile', 'main'));
+  if (snap.exists()) {
+    const d = snap.data();
+    document.getElementById('profile-name').value = d.name || '';
+    document.getElementById('profile-image').value = d.imageUrl || '';
+    document.getElementById('profile-about').value = d.about || '';
+    document.getElementById('link-whatsapp').value = d.whatsapp || '';
+    document.getElementById('link-instagram').value = d.instagram || '';
+    document.getElementById('link-telegram').value = d.telegram || '';
+    document.getElementById('link-twitter').value = d.twitter || '';
+    renderSocialPreview(d);
+  }
+}
+
+function renderSocialPreview(d) {
+  const btns = [];
+  if (d.whatsapp) btns.push(`<a href="${d.whatsapp}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin:4px;padding:8px 14px;background:#25d366;color:white;border-radius:20px;text-decoration:none;font-size:14px">💬 WhatsApp</a>`);
+  if (d.instagram) btns.push(`<a href="${d.instagram}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin:4px;padding:8px 14px;background:#e1306c;color:white;border-radius:20px;text-decoration:none;font-size:14px">📸 Instagram</a>`);
+  if (d.telegram) btns.push(`<a href="${d.telegram}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin:4px;padding:8px 14px;background:#0088cc;color:white;border-radius:20px;text-decoration:none;font-size:14px">✈️ Telegram</a>`);
+  if (d.twitter) btns.push(`<a href="${d.twitter}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin:4px;padding:8px 14px;background:#1da1f2;color:white;border-radius:20px;text-decoration:none;font-size:14px">🐦 Twitter</a>`);
+  const preview = document.getElementById('social-preview');
+  const container = document.getElementById('social-btns');
+  if (btns.length) { preview.style.display = ''; container.innerHTML = btns.join(''); }
+  else preview.style.display = 'none';
+}
+
+window.saveProfile = async function() {
+  const data = {
+    name: document.getElementById('profile-name').value.trim(),
+    imageUrl: document.getElementById('profile-image').value.trim(),
+    about: document.getElementById('profile-about').value.trim(),
+    whatsapp: document.getElementById('link-whatsapp').value.trim(),
+    instagram: document.getElementById('link-instagram').value.trim(),
+    telegram: document.getElementById('link-telegram').value.trim(),
+    twitter: document.getElementById('link-twitter').value.trim(),
+    updatedAt: serverTimestamp()
+  };
+  try {
+    await setDoc(doc(db, 'ownerProfile', 'main'), data);
+    showToast('✅ Profile save हो गई!');
+    renderSocialPreview(data);
+  } catch (e) { showToast('❌ Error: ' + e.message); }
+};
+</script>
+</body>
+</html>
