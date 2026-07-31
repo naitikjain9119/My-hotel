@@ -1,0 +1,39 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid",
+        ".validate": "newData.hasChildren(['name', 'email', 'mobile'])"
+      }
+    },
+    "hotels": {
+      ".read": true,
+      ".write": "auth !== null && root.child('admins').child(auth.uid).exists()"
+    },
+    "orders": {
+      "$orderId": {
+        ".read": "auth !== null && (data.child('userId').val() === auth.uid || root.child('hosts').child(auth.uid).exists() || root.child('deliveryBoys').child(auth.uid).exists())",
+        ".write": "auth !== null"
+      }
+    },
+    "hosts": {
+      ".read": "auth !== null",
+      ".write": "root.child('owner').child(auth.uid).exists()"
+    },
+    "deliveryBoys": {
+      ".read": "auth !== null",
+      ".write": "root.child('owner').child(auth.uid).exists()"
+    },
+    "owner": {
+      ".read": "auth !== null && root.child('owner').child(auth.uid).exists()",
+      ".write": "root.child('owner').child(auth.uid).exists()"
+    },
+    "ownerProfile": {
+      ".read": true,
+      ".write": "root.child('owner').child(auth.uid).exists()"
+    }
+  }
+}
