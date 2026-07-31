@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel Order - User Panel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; }
+  
+  /* Top bar */
+  .top-bar { background: #ff6b35; color: white; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .top-bar h1 { font-size: 18px; font-weight: 700; }
+  .top-bar .back-btn { background: none; border: none; color: white; font-size: 22px; cursor: pointer; }
+  
+  /* Search bar */
+  .search-bar { padding: 12px 16px; background: white; border-bottom: 1px solid #eee; }
+  .search-bar input { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 25px; font-size: 14px; outline: none; background: #f9f9f9; }
+  .search-bar input:focus { border-color: #ff6b35; background: white; }
+  
+  /* Content area */
+  .content { padding: 16px; padding-bottom: 80px; }
+  
+  /* Bottom nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 6px; cursor: pointer; border: none; background: none; color: #999; font-size: 11px; transition: color 0.2s; }
+  .nav-btn.active { color: #ff6b35; }
+  .nav-btn span { font-size: 22px; margin-bottom: 2px; }
+  
+  /* Hotel card */
+  .hotel-card { background: white; border-radius: 12px; margin-bottom: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer; transition: transform 0.2s; }
+  .hotel-card:hover { transform: translateY(-2px); }
+  .hotel-card img { width: 100%; height: 160px; object-fit: cover; }
+  .hotel-card .info { padding: 12px 14px; }
+  .hotel-card .name { font-size: 16px; font-weight: 700; color: #222; }
+  .hotel-card .desc { font-size: 12px; color: #888; margin-top: 4px; }
+  
+  /* Page management */
+  .page { display: none; }
+  .page.active { display: block; }
+  
+  /* Auth pages */
+  .auth-container { background: white; border-radius: 16px; padding: 28px 24px; margin: 20px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+  .auth-container h2 { font-size: 22px; font-weight: 700; color: #ff6b35; margin-bottom: 6px; text-align: center; }
+  .auth-container p { font-size: 13px; color: #888; text-align: center; margin-bottom: 24px; }
+  .input-group { margin-bottom: 16px; }
+  .input-group label { font-size: 13px; color: #555; font-weight: 600; display: block; margin-bottom: 6px; }
+  .input-group input { width: 100%; padding: 12px 14px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .input-group input:focus { border-color: #ff6b35; }
+  .btn-primary { width: 100%; padding: 13px; background: #ff6b35; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: background 0.2s; }
+  .btn-primary:hover { background: #e55a25; }
+  .btn-outline { width: 100%; padding: 12px; background: transparent; color: #ff6b35; border: 1.5px solid #ff6b35; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
+  .btn-outline:hover { background: #ff6b35; color: white; }
+  .link-btn { background: none; border: none; color: #ff6b35; font-size: 13px; cursor: pointer; text-decoration: underline; display: block; text-align: center; margin-top: 10px; }
+  
+  /* OTP row */
+  .otp-row { display: flex; gap: 8px; align-items: flex-end; }
+  .otp-row .input-group { flex: 1; margin-bottom: 0; }
+  .send-otp-btn { padding: 12px 14px; background: #ff6b35; color: white; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  
+  /* Dish page */
+  .filter-bar { background: white; padding: 12px 16px; border-bottom: 1px solid #eee; display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-chip { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #ddd; background: white; font-size: 12px; cursor: pointer; color: #555; transition: all 0.2s; }
+  .filter-chip.active { background: #ff6b35; color: white; border-color: #ff6b35; }
+  
+  .dish-card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+  .dish-card img { width: 80px; height: 80px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+  .dish-info { flex: 1; }
+  .dish-name { font-size: 15px; font-weight: 700; color: #222; }
+  .dish-price { font-size: 14px; color: #ff6b35; font-weight: 700; margin-top: 4px; }
+  .qty-control { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .qty-btn { width: 28px; height: 28px; border-radius: 50%; background: #ff6b35; color: white; border: none; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .qty-num { font-size: 15px; font-weight: 700; min-width: 20px; text-align: center; }
+  
+  /* Cart btn */
+  .cart-bar { position: fixed; bottom: 65px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 448px; background: #ff6b35; color: white; padding: 14px 20px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: 0 4px 16px rgba(255,107,53,0.4); z-index: 99; }
+  .cart-bar.hidden { display: none; }
+  .cart-bar .cart-info { font-size: 14px; }
+  .cart-bar .cart-info span { font-weight: 700; font-size: 16px; }
+  .cart-bar .cart-total { font-size: 16px; font-weight: 700; }
+  
+  /* Order info page */
+  .order-summary { background: white; border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+  .order-summary h3 { font-size: 15px; font-weight: 700; color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
+  .order-item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+  .order-item-row:last-child { border-bottom: none; }
+  .order-total-row { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; margin-top: 12px; padding-top: 12px; border-top: 2px solid #ff6b35; color: #ff6b35; }
+  .location-row { display: flex; gap: 8px; align-items: flex-end; }
+  .location-row .input-group { flex: 1; margin-bottom: 0; }
+  .gps-btn { padding: 12px; background: #28a745; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 18px; }
+  
+  /* Orders page */
+  .order-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+  .order-card .order-id { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .order-card .status { font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+  .status.pending { background: #fff3cd; color: #856404; }
+  .status.delivered { background: #d4edda; color: #155724; }
+  .order-card .order-amount { font-size: 16px; font-weight: 700; color: #ff6b35; margin-top: 8px; }
+  
+  /* Profile page */
+  .profile-header { background: white; padding: 28px 20px; text-align: center; border-radius: 12px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+  .profile-avatar { width: 80px; height: 80px; background: #ff6b35; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; color: white; margin: 0 auto 12px; }
+  .profile-name { font-size: 20px; font-weight: 700; color: #222; }
+  .profile-email { font-size: 13px; color: #888; margin-top: 4px; }
+  .profile-options { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+  .profile-option { padding: 16px 20px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s; }
+  .profile-option:hover { background: #fafafa; }
+  .profile-option:last-child { border-bottom: none; }
+  .profile-option span { font-size: 20px; }
+  .profile-option p { font-size: 15px; color: #333; }
+
+  /* Notification */
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  /* Loading */
+  .loading { text-align: center; padding: 40px; color: #888; }
+  .empty-state { text-align: center; padding: 60px 20px; color: #bbb; }
+  .empty-state span { font-size: 48px; display: block; margin-bottom: 12px; }
+  
+  /* Delivery OTP notification */
+  .otp-notification { background: #d4edda; border: 1px solid #28a745; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .otp-notification h4 { color: #155724; font-size: 14px; font-weight: 700; }
+  .otp-notification p { color: #155724; font-size: 13px; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== LOGIN PAGE ===== -->
+<div class="page active" id="page-login">
+  <div class="top-bar"><h1>🍽️ Hotel Order</h1></div>
+  <div style="padding: 30px 16px 0; text-align: center;">
+    <div style="font-size: 64px; margin-bottom: 8px;">🍽️</div>
+    <h2 style="font-size: 24px; font-weight: 800; color: #ff6b35;">Hotel Order</h2>
+    <p style="font-size: 14px; color: #888; margin-top: 4px;">स्वाद की दुनिया में आपका स्वागत है</p>
+  </div>
+  <div class="auth-container">
+    <h2>Login करें</h2>
+    <p>अपनी ID और Password से login करें</p>
+    <div class="input-group">
+      <label>Email ID</label>
+      <input type="email" id="login-email" placeholder="example@gmail.com">
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="Password डालें">
+    </div>
+    <button class="btn-primary" onclick="loginUser()">Login करें →</button>
+    <button class="link-btn" onclick="showPage('page-forgot')">🔑 Password भूल गए?</button>
+    <button class="btn-outline" onclick="showPage('page-register')">+ नया Account बनाएं</button>
+  </div>
+</div>
+
+<!-- ===== FORGOT PASSWORD PAGE ===== -->
+<div class="page" id="page-forgot">
+  <div class="top-bar">
+    <button class="back-btn" onclick="showPage('page-login')">←</button>
+    <h1>Password Reset</h1>
+    <div></div>
+  </div>
+  <div class="auth-container" style="margin-top: 20px;">
+    <h2>Password Reset</h2>
+    <p>Email ID डालें, reset link भेजा जाएगा</p>
+    <div class="input-group">
+      <label>Email ID</label>
+      <input type="email" id="forgot-email" placeholder="Email डालें">
+    </div>
+    <button class="btn-primary" onclick="resetPassword()">Reset Link भेजें</button>
+    <button class="btn-outline" onclick="showPage('page-login')">← वापस जाएं</button>
+  </div>
+</div>
+
+<!-- ===== REGISTER PAGE ===== -->
+<div class="page" id="page-register">
+  <div class="top-bar">
+    <button class="back-btn" onclick="showPage('page-login')">←</button>
+    <h1>Account बनाएं</h1>
+    <div></div>
+  </div>
+  <div class="auth-container" style="margin-top: 20px;">
+    <h2>New Account</h2>
+    <p>अपनी details भरें</p>
+    <div class="input-group">
+      <label>पूरा नाम</label>
+      <input type="text" id="reg-name" placeholder="आपका नाम">
+    </div>
+    <div class="input-group">
+      <label>Email ID</label>
+      <input type="email" id="reg-email" placeholder="example@gmail.com">
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" id="reg-password" placeholder="Password (min 6 characters)">
+    </div>
+    <div class="input-group">
+      <label>Mobile Number</label>
+      <div class="otp-row">
+        <div class="input-group" style="flex:1; margin-bottom:0">
+          <input type="tel" id="reg-mobile" placeholder="10 अंक का number">
+        </div>
+        <button class="send-otp-btn" onclick="sendOTP()">OTP भेजें</button>
+      </div>
+    </div>
+    <div class="input-group" id="otp-section" style="display:none">
+      <label>OTP Verify करें</label>
+      <div id="recaptcha-container"></div>
+      <input type="text" id="reg-otp" placeholder="6 अंक का OTP डालें" maxlength="6">
+      <small style="color:#888; font-size:11px;">OTP आपके mobile पर भेजा गया है</small>
+    </div>
+    <button class="btn-primary" onclick="registerUser()">Account बनाएं →</button>
+    <button class="btn-outline" onclick="showPage('page-login')">← Login करें</button>
+  </div>
+</div>
+
+<!-- ===== HOME PAGE ===== -->
+<div class="page" id="page-home">
+  <div class="top-bar">
+    <h1>🍽️ Hotel Order</h1>
+    <div style="font-size: 13px; cursor: pointer;" onclick="showPage('page-profile')">👤</div>
+  </div>
+  <div class="search-bar">
+    <input type="text" id="hotel-search" placeholder="🔍 Hotel या Restaurant खोजें..." oninput="searchHotels()">
+  </div>
+  <div class="content" id="hotels-list">
+    <div class="loading">Hotels लोड हो रही हैं...</div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab('home')"><span>🏠</span>Home</button>
+    <button class="nav-btn" onclick="switchTab('orders')"><span>📦</span>Orders</button>
+    <button class="nav-btn" onclick="switchTab('profile')"><span>👤</span>Profile</button>
+  </div>
+</div>
+
+<!-- ===== DISHES PAGE ===== -->
+<div class="page" id="page-dishes">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goBackFromDishes()">←</button>
+    <h1 id="hotel-title">Hotel Name</h1>
+    <div></div>
+  </div>
+  <div class="search-bar">
+    <input type="text" id="dish-search" placeholder="🔍 Dish खोजें..." oninput="searchDishes()">
+  </div>
+  <div class="filter-bar">
+    <button class="filter-chip active" onclick="setFilter(0)">सभी</button>
+    <button class="filter-chip" onclick="setFilter(50)">₹50 तक</button>
+    <button class="filter-chip" onclick="setFilter(100)">₹100 तक</button>
+    <button class="filter-chip" onclick="setFilter(200)">₹200 तक</button>
+    <button class="filter-chip" onclick="setFilter(500)">₹500 तक</button>
+  </div>
+  <div style="padding: 10px 16px 0; font-size: 13px; color: #888;" id="item-count"></div>
+  <div class="content" id="dishes-list"></div>
+  <div class="cart-bar hidden" id="cart-bar" onclick="showPage('page-order-info')">
+    <div class="cart-info"><span id="cart-count">0</span> items | देखें</div>
+    <div class="cart-total" id="cart-total-bar">₹0</div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab('home')"><span>🏠</span>Home</button>
+    <button class="nav-btn" onclick="switchTab('orders')"><span>📦</span>Orders</button>
+    <button class="nav-btn" onclick="switchTab('profile')"><span>👤</span>Profile</button>
+  </div>
+</div>
+
+<!-- ===== ORDER INFO PAGE ===== -->
+<div class="page" id="page-order-info">
+  <div class="top-bar">
+    <button class="back-btn" onclick="showPage('page-dishes')">←</button>
+    <h1>Order Details</h1>
+    <div></div>
+  </div>
+  <div class="content">
+    <div class="order-summary">
+      <h3>🛒 आपका Order</h3>
+      <div id="order-items-display"></div>
+      <div class="order-total-row"><span>Total</span><span id="order-grand-total">₹0</span></div>
+    </div>
+    <div class="order-summary">
+      <h3>📍 Delivery Details</h3>
+      <div class="input-group">
+        <label>आपका नाम</label>
+        <input type="text" id="delivery-name" placeholder="नाम डालें">
+      </div>
+      <div class="input-group">
+        <label>Street / Area</label>
+        <input type="text" id="delivery-street" placeholder="गली, मोहल्ला, Area">
+      </div>
+      <div class="input-group">
+        <label>Location</label>
+        <div class="location-row">
+          <div class="input-group" style="flex:1; margin-bottom:0">
+            <input type="text" id="delivery-location" placeholder="Location डालें">
+          </div>
+          <button class="gps-btn" onclick="getCurrentLocation()" title="Current Location">📍</button>
+        </div>
+      </div>
+    </div>
+    <button class="btn-primary" style="margin: 0 0 16px" onclick="placeOrder()">✅ Order Place करें</button>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="switchTab('home')"><span>🏠</span>Home</button>
+    <button class="nav-btn active" onclick="switchTab('orders')"><span>📦</span>Orders</button>
+    <button class="nav-btn" onclick="switchTab('profile')"><span>👤</span>Profile</button>
+  </div>
+</div>
+
+<!-- ===== ORDERS PAGE ===== -->
+<div class="page" id="page-orders">
+  <div class="top-bar"><h1>📦 My Orders</h1></div>
+  <div class="content" id="user-orders-list">
+    <div class="loading">Orders लोड हो रही हैं...</div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="switchTab('home')"><span>🏠</span>Home</button>
+    <button class="nav-btn active" onclick="switchTab('orders')"><span>📦</span>Orders</button>
+    <button class="nav-btn" onclick="switchTab('profile')"><span>👤</span>Profile</button>
+  </div>
+</div>
+
+<!-- ===== PROFILE PAGE ===== -->
+<div class="page" id="page-profile">
+  <div class="top-bar"><h1>👤 Profile</h1></div>
+  <div class="content">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profile-avatar">👤</div>
+      <div class="profile-name" id="profile-name">---</div>
+      <div class="profile-email" id="profile-email">---</div>
+    </div>
+    <div class="profile-options">
+      <div class="profile-option" onclick="switchTab('orders')">
+        <span>📦</span><p>मेरे Orders</p>
+      </div>
+      <div class="profile-option" onclick="logoutUser()">
+        <span>🚪</span><p>Logout</p>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="switchTab('home')"><span>🏠</span>Home</button>
+    <button class="nav-btn" onclick="switchTab('orders')"><span>📦</span>Orders</button>
+    <button class="nav-btn active" onclick="switchTab('profile')"><span>👤</span>Profile</button>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, where, orderBy, onSnapshot, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDYh83XSYKVdUnKh1OgBzuPOJRb9kNTxno",
+  authDomain: "my-hotel-b7e45.firebaseapp.com",
+  projectId: "my-hotel-b7e45",
+  storageBucket: "my-hotel-b7e45.firebasestorage.app",
+  messagingSenderId: "766471367677",
+  appId: "1:766471367677:web:6cb895ceecd170185a4794"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// State
+let currentUser = null;
+let allHotels = [];
+let currentHotel = null;
+let allDishes = [];
+let filteredDishes = [];
+let cart = {};
+let priceFilter = 0;
+let confirmationResult = null;
+
+// Show page
+window.showPage = function(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  window.scrollTo(0, 0);
+};
+
+// Toast
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+window.showToast = showToast;
+
+// Switch tab
+window.switchTab = function(tab) {
+  const navBtns = document.querySelectorAll('.bottom-nav .nav-btn');
+  navBtns.forEach(b => b.classList.remove('active'));
+  if (tab === 'home') {
+    showPage('page-home');
+    loadHotels();
+    navBtns[0].classList.add('active');
+  } else if (tab === 'orders') {
+    showPage('page-orders');
+    loadUserOrders();
+    navBtns[1].classList.add('active');
+  } else if (tab === 'profile') {
+    showPage('page-profile');
+    navBtns[2].classList.add('active');
+  }
+};
+
+// Auth state
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      document.getElementById('profile-name').textContent = data.name || 'User';
+      document.getElementById('profile-email').textContent = user.email;
+      document.getElementById('profile-avatar').textContent = (data.name || 'U')[0].toUpperCase();
+    }
+    showPage('page-home');
+    loadHotels();
+    listenForDeliveryNotifications();
+  } else {
+    showPage('page-login');
+  }
+});
+
+// Login
+window.loginUser = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-password').value;
+  if (!email || !pass) return showToast('Email और Password डालें');
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    showToast('✅ Login सफल!');
+  } catch (e) {
+    showToast('❌ ' + getErrorMsg(e.code));
+  }
+};
+
+// Forgot password
+window.resetPassword = async function() {
+  const email = document.getElementById('forgot-email').value.trim();
+  if (!email) return showToast('Email डालें');
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showToast('✅ Reset link भेजा गया!');
+    showPage('page-login');
+  } catch (e) {
+    showToast('❌ ' + getErrorMsg(e.code));
+  }
+};
+
+// OTP
+window.sendOTP = async function() {
+  const mobile = document.getElementById('reg-mobile').value.trim();
+  if (!mobile || mobile.length < 10) return showToast('सही Mobile Number डालें');
+  try {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'normal',
+        callback: () => {}
+      });
+    }
+    const phoneNumber = '+91' + mobile;
+    confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+    document.getElementById('otp-section').style.display = 'block';
+    showToast('✅ OTP भेजा गया!');
+  } catch (e) {
+    showToast('❌ OTP Error: ' + e.message);
+  }
+};
+
+// Register
+window.registerUser = async function() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-password').value;
+  const mobile = document.getElementById('reg-mobile').value.trim();
+  const otp = document.getElementById('reg-otp').value.trim();
+
+  if (!name || !email || !pass || !mobile) return showToast('सभी details भरें');
+  if (!otp) return showToast('OTP डालें और verify करें');
+  if (!confirmationResult) return showToast('पहले OTP भेजें');
+
+  try {
+    await confirmationResult.confirm(otp);
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await setDoc(doc(db, 'users', cred.user.uid), {
+      name, email, mobile,
+      createdAt: serverTimestamp()
+    });
+    showToast('✅ Account बन गया!');
+  } catch (e) {
+    showToast('❌ ' + getErrorMsg(e.code));
+  }
+};
+
+// Logout
+window.logoutUser = async function() {
+  await signOut(auth);
+  cart = {};
+  showToast('Logout हो गए');
+};
+
+// Load hotels
+async function loadHotels() {
+  const list = document.getElementById('hotels-list');
+  list.innerHTML = '<div class="loading">Hotels लोड हो रही हैं...</div>';
+  try {
+    const snap = await getDocs(collection(db, 'hotels'));
+    allHotels = [];
+    snap.forEach(d => allHotels.push({ id: d.id, ...d.data() }));
+    allHotels = allHotels.filter(h => !h.hidden);
+    renderHotels(allHotels);
+  } catch (e) {
+    list.innerHTML = '<div class="empty-state"><span>⚠️</span>Hotels load नहीं हो पाई</div>';
+  }
+}
+
+function renderHotels(hotels) {
+  const list = document.getElementById('hotels-list');
+  if (!hotels.length) {
+    list.innerHTML = '<div class="empty-state"><span>🏨</span>कोई Hotel नहीं मिली</div>';
+    return;
+  }
+  list.innerHTML = hotels.map(h => `
+    <div class="hotel-card" onclick="openHotel('${h.id}')">
+      <img src="${h.imageUrl || 'https://via.placeholder.com/400x160?text=' + encodeURIComponent(h.name)}" alt="${h.name}" onerror="this.src='https://via.placeholder.com/400x160?text=Hotel'">
+      <div class="info">
+        <div class="name">${h.name}</div>
+        <div class="desc">${h.description || 'यहाँ click करें'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.searchHotels = function() {
+  const q = document.getElementById('hotel-search').value.toLowerCase();
+  renderHotels(allHotels.filter(h => h.name.toLowerCase().includes(q)));
+};
+
+// Open hotel
+window.openHotel = async function(hotelId) {
+  cart = {};
+  priceFilter = 0;
+  currentHotel = allHotels.find(h => h.id === hotelId);
+  document.getElementById('hotel-title').textContent = currentHotel?.name || 'Hotel';
+  showPage('page-dishes');
+  document.querySelectorAll('.filter-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
+  await loadDishes(hotelId);
+  updateCartBar();
+};
+
+window.goBackFromDishes = function() {
+  cart = {};
+  updateCartBar();
+  showPage('page-home');
+};
+
+async function loadDishes(hotelId) {
+  const list = document.getElementById('dishes-list');
+  list.innerHTML = '<div class="loading">Dishes लोड हो रही हैं...</div>';
+  try {
+    const snap = await getDocs(collection(db, 'hotels', hotelId, 'dishes'));
+    allDishes = [];
+    snap.forEach(d => allDishes.push({ id: d.id, ...d.data() }));
+    allDishes = allDishes.filter(d => !d.hidden);
+    allDishes.sort((a, b) => (a.order || 0) - (b.order || 0));
+    filteredDishes = [...allDishes];
+    renderDishes();
+  } catch (e) {
+    list.innerHTML = '<div class="empty-state"><span>⚠️</span>Dishes load नहीं हो पाई</div>';
+  }
+}
+
+function renderDishes() {
+  const list = document.getElementById('dishes-list');
+  const q = (document.getElementById('dish-search').value || '').toLowerCase();
+  let dishes = filteredDishes.filter(d => d.name.toLowerCase().includes(q));
+  document.getElementById('item-count').textContent = `${dishes.length} items मिले`;
+  if (!dishes.length) {
+    list.innerHTML = '<div class="empty-state"><span>🍽️</span>कोई Dish नहीं मिली</div>';
+    return;
+  }
+  list.innerHTML = dishes.map(d => `
+    <div class="dish-card" id="dish-${d.id}">
+      <img src="${d.imageUrl || 'https://via.placeholder.com/80x80?text=Dish'}" alt="${d.name}" onerror="this.src='https://via.placeholder.com/80x80?text=Dish'">
+      <div class="dish-info">
+        <div class="dish-name">${d.name}</div>
+        <div class="dish-price">₹${d.price}</div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="updateCart('${d.id}', -1)">−</button>
+          <span class="qty-num" id="qty-${d.id}">${cart[d.id]?.qty || 0}</span>
+          <button class="qty-btn" onclick="updateCart('${d.id}', 1)">+</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.searchDishes = function() { renderDishes(); };
+
+window.setFilter = function(price) {
+  priceFilter = price;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  filteredDishes = price === 0 ? [...allDishes] : allDishes.filter(d => d.price <= price);
+  renderDishes();
+};
+
+window.updateCart = function(dishId, delta) {
+  const dish = allDishes.find(d => d.id === dishId);
+  if (!dish) return;
+  if (!cart[dishId]) cart[dishId] = { dish, qty: 0 };
+  cart[dishId].qty = Math.max(0, cart[dishId].qty + delta);
+  if (cart[dishId].qty === 0) delete cart[dishId];
+  document.getElementById('qty-' + dishId).textContent = cart[dishId]?.qty || 0;
+  updateCartBar();
+};
+
+function updateCartBar() {
+  const bar = document.getElementById('cart-bar');
+  const items = Object.values(cart);
+  const total = items.reduce((s, i) => s + i.dish.price * i.qty, 0);
+  const count = items.reduce((s, i) => s + i.qty, 0);
+  document.getElementById('cart-count').textContent = count;
+  document.getElementById('cart-total-bar').textContent = '₹' + total;
+  bar.classList.toggle('hidden', count === 0);
+  showOrderInfo();
+}
+
+function showOrderInfo() {
+  const items = Object.values(cart);
+  const total = items.reduce((s, i) => s + i.dish.price * i.qty, 0);
+  document.getElementById('order-items-display').innerHTML = items.map(i => `
+    <div class="order-item-row">
+      <span>${i.dish.name} × ${i.qty}</span>
+      <span>₹${i.dish.price * i.qty}</span>
+    </div>
+  `).join('') || '<p style="color:#888; font-size:14px">Cart खाली है</p>';
+  document.getElementById('order-grand-total').textContent = '₹' + total;
+}
+
+// Current location
+window.getCurrentLocation = function() {
+  if (!navigator.geolocation) return showToast('GPS support नहीं है');
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude, longitude } = pos.coords;
+    document.getElementById('delivery-location').value = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+    showToast('✅ Current location set!');
+  }, () => showToast('❌ Location access दें'));
+};
+
+// Place order
+window.placeOrder = async function() {
+  if (!currentUser) return showToast('Login करें');
+  const items = Object.values(cart);
+  if (!items.length) return showToast('Cart खाली है');
+  const name = document.getElementById('delivery-name').value.trim();
+  const street = document.getElementById('delivery-street').value.trim();
+  const location = document.getElementById('delivery-location').value.trim();
+  if (!name || !street || !location) return showToast('सभी delivery details भरें');
+
+  const total = items.reduce((s, i) => s + i.dish.price * i.qty, 0);
+  try {
+    const orderRef = await addDoc(collection(db, 'orders'), {
+      userId: currentUser.uid,
+      userEmail: currentUser.email,
+      hotelId: currentHotel.id,
+      hotelName: currentHotel.name,
+      items: items.map(i => ({ name: i.dish.name, price: i.dish.price, qty: i.qty })),
+      totalAmount: total,
+      deliveryName: name,
+      deliveryStreet: street,
+      deliveryLocation: location,
+      status: 'placed',
+      createdAt: serverTimestamp()
+    });
+    cart = {};
+    updateCartBar();
+    showToast('✅ Order Place हो गया! Order ID: ' + orderRef.id.slice(0, 8));
+    showPage('page-orders');
+    loadUserOrders();
+  } catch (e) {
+    showToast('❌ Order place नहीं हुआ: ' + e.message);
+  }
+};
+
+// Load user orders
+async function loadUserOrders() {
+  if (!currentUser) return;
+  const list = document.getElementById('user-orders-list');
+  list.innerHTML = '<div class="loading">Orders लोड हो रही हैं...</div>';
+  const q = query(collection(db, 'orders'), where('userId', '==', currentUser.uid));
+  onSnapshot(q, snap => {
+    const orders = [];
+    snap.forEach(d => orders.push({ id: d.id, ...d.data() }));
+    orders.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    if (!orders.length) {
+      list.innerHTML = '<div class="empty-state"><span>📦</span>कोई Order नहीं है</div>';
+      return;
+    }
+    list.innerHTML = orders.map(o => `
+      <div class="order-card">
+        ${o.status === 'delivered' ? `<div class="otp-notification"><h4>✅ Order Delivered!</h4><p>आपका order deliver हो गया</p></div>` : 
+          o.deliveryOtp ? `<div class="otp-notification" style="background:#fff3cd; border-color:#ffc107"><h4>🔔 Delivery OTP: ${o.deliveryOtp}</h4><p>यह OTP delivery boy को दें</p></div>` : ''}
+        <div class="order-id">Order ID: ${o.id.slice(0, 8).toUpperCase()}</div>
+        <div style="font-size:14px; color:#555; margin: 4px 0">${o.hotelName}</div>
+        ${o.items.map(i => `<div style="font-size:13px; color:#888">${i.name} × ${i.qty}</div>`).join('')}
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px">
+          <span class="status ${o.status === 'delivered' ? 'delivered' : 'pending'}">${o.status === 'delivered' ? '✅ Delivered' : o.status === 'out_for_delivery' ? '🚴 Out for Delivery' : '⏳ Pending'}</span>
+          <span class="order-amount">₹${o.totalAmount}</span>
+        </div>
+      </div>
+    `).join('');
+  });
+}
+
+// Listen for delivery notifications
+function listenForDeliveryNotifications() {
+  if (!currentUser) return;
+  const q = query(collection(db, 'orders'), where('userId', '==', currentUser.uid), where('status', '==', 'delivered'));
+  onSnapshot(q, snap => {
+    snap.docChanges().forEach(change => {
+      if (change.type === 'modified') {
+        showToast('🎉 आपका order delivered हो गया!', 5000);
+      }
+    });
+  });
+}
+
+function getErrorMsg(code) {
+  const msgs = {
+    'auth/user-not-found': 'Email नहीं मिली',
+    'auth/wrong-password': 'Password गलत है',
+    'auth/email-already-in-use': 'Email पहले से registered है',
+    'auth/weak-password': 'Password कम से कम 6 characters का हो',
+    'auth/invalid-email': 'Email सही नहीं है',
+    'auth/invalid-credential': 'Email या Password गलत है',
+  };
+  return msgs[code] || 'कोई Error हुई';
+}
+</script>
+
+</body>
+</html>
