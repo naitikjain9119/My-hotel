@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delivery Boy Panel - Hotel Order</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f8f0; color: #333; max-width: 480px; margin: 0 auto; min-height: 100vh; }
+  .top-bar { background: #2e7d32; color: white; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .top-bar h1 { font-size: 18px; font-weight: 700; }
+  .logout-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+  .content { padding: 16px; padding-bottom: 80px; }
+  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 6px; cursor: pointer; border: none; background: none; color: #999; font-size: 11px; transition: color 0.2s; }
+  .nav-btn.active { color: #2e7d32; }
+  .nav-btn span { font-size: 22px; margin-bottom: 2px; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .auth-container { background: white; border-radius: 16px; padding: 28px 24px; margin: 30px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+  .auth-container h2 { font-size: 22px; font-weight: 700; color: #2e7d32; margin-bottom: 6px; text-align: center; }
+  .auth-container p { font-size: 13px; color: #888; text-align: center; margin-bottom: 24px; }
+  .input-group { margin-bottom: 16px; }
+  .input-group label { font-size: 13px; color: #555; font-weight: 600; display: block; margin-bottom: 6px; }
+  .input-group input { width: 100%; padding: 12px 14px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .input-group input:focus { border-color: #2e7d32; }
+  .btn-primary { width: 100%; padding: 13px; background: #2e7d32; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+  .btn-primary:hover { background: #1b5e20; }
+  .section-title { font-size: 16px; font-weight: 700; color: #222; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #2e7d32; }
+  .order-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .order-id { font-size: 12px; color: #888; }
+  .detail-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #555; margin-bottom: 6px; }
+  .detail-row span { font-size: 16px; }
+  .items-list { background: #f8f9fa; border-radius: 8px; padding: 10px; margin: 10px 0; }
+  .item-row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; color: #444; }
+  .total-row { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: #2e7d32; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
+  .action-btns { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .go-btn { flex: 1; padding: 10px 14px; background: #1565c0; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .otp-btn { flex: 1; padding: 10px 14px; background: #ff6b35; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .otp-input-row { margin-top: 12px; display: flex; gap: 8px; align-items: flex-end; }
+  .otp-input-row input { flex: 1; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 10px; font-size: 14px; outline: none; }
+  .otp-input-row input:focus { border-color: #2e7d32; }
+  .confirm-btn { padding: 10px 16px; background: #2e7d32; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .status-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+  .status-placed { background: #fff3cd; color: #856404; }
+  .status-delivered { background: #d4edda; color: #155724; }
+  .status-out { background: #cce5ff; color: #004085; }
+  .empty-state { text-align: center; padding: 60px 20px; color: #bbb; }
+  .empty-state span { font-size: 48px; display: block; margin-bottom: 12px; }
+  .loading { text-align: center; padding: 40px; color: #888; }
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+  .badge-count { background: #e53935; color: white; border-radius: 50%; font-size: 11px; padding: 1px 6px; margin-left: 4px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN PAGE -->
+<div class="page active" id="page-login">
+  <div class="top-bar"><h1>🚴 Delivery Panel</h1><div></div></div>
+  <div style="padding: 30px 16px 0; text-align: center;">
+    <div style="font-size: 64px; margin-bottom: 8px;">🚴</div>
+    <h2 style="font-size: 22px; font-weight: 800; color: #2e7d32;">Delivery Boy Login</h2>
+    <p style="font-size: 13px; color: #888; margin-top: 4px;">Owner द्वारा दी गई ID से login करें</p>
+  </div>
+  <div class="auth-container">
+    <h2>Login करें</h2>
+    <p>Delivery ID और Password डालें</p>
+    <div class="input-group">
+      <label>Delivery ID (Email)</label>
+      <input type="email" id="db-email" placeholder="Delivery ID डालें">
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" id="db-password" placeholder="Password डालें">
+    </div>
+    <button class="btn-primary" onclick="loginDelivery()">Login करें →</button>
+  </div>
+</div>
+
+<!-- MAIN PANEL -->
+<div class="page" id="page-main">
+  <div class="top-bar">
+    <h1>🚴 Delivery Panel</h1>
+    <button class="logout-btn" onclick="logoutDelivery()">Logout</button>
+  </div>
+
+  <!-- New Orders Tab -->
+  <div class="page active" id="tab-new-orders">
+    <div class="content">
+      <div class="section-title">📦 New Orders <span class="badge-count" id="new-count">0</span></div>
+      <div id="new-orders-list"><div class="loading">Orders लोड हो रही हैं...</div></div>
+    </div>
+  </div>
+
+  <!-- Order History Tab -->
+  <div class="page" id="tab-order-history">
+    <div class="content">
+      <div class="section-title">✅ Delivered Orders</div>
+      <div id="history-orders-list"><div class="loading">History लोड हो रही है...</div></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchDeliveryTab('new')"><span>📦</span>New Orders</button>
+    <button class="nav-btn" onclick="switchDeliveryTab('history')"><span>✅</span>History</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, query, where, onSnapshot, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDYh83XSYKVdUnKh1OgBzuPOJRb9kNTxno",
+  authDomain: "my-hotel-b7e45.firebaseapp.com",
+  projectId: "my-hotel-b7e45",
+  storageBucket: "my-hotel-b7e45.firebasestorage.app",
+  messagingSenderId: "766471367677",
+  appId: "1:766471367677:web:6cb895ceecd170185a4794"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+let currentDBUser = null;
+let unsubNew = null;
+let unsubHistory = null;
+// Store generated OTPs per order in memory
+const generatedOTPs = {};
+
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+window.switchDeliveryTab = function(tab) {
+  document.querySelectorAll('.bottom-nav .nav-btn').forEach((b, i) => b.classList.toggle('active', (tab === 'new' && i === 0) || (tab === 'history' && i === 1)));
+  document.getElementById('tab-new-orders').classList.toggle('active', tab === 'new');
+  document.getElementById('tab-order-history').classList.toggle('active', tab === 'history');
+  if (tab === 'new') loadNewOrders();
+  else loadDeliveredOrders();
+};
+
+window.loginDelivery = async function() {
+  const email = document.getElementById('db-email').value.trim();
+  const pass = document.getElementById('db-password').value;
+  if (!email || !pass) return showToast('ID और Password डालें');
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const dbDoc = await getDoc(doc(db, 'deliveryBoys', cred.user.uid));
+    if (!dbDoc.exists() || dbDoc.data().banned) {
+      await signOut(auth);
+      return showToast('❌ आप Delivery Boy नहीं हैं या ban किए गए हैं');
+    }
+    currentDBUser = cred.user;
+    showPage('page-main');
+    document.getElementById('tab-new-orders').classList.add('active');
+    loadNewOrders();
+    showToast('✅ Login सफल!');
+  } catch (e) {
+    showToast('❌ ' + getErrorMsg(e.code));
+  }
+};
+
+window.logoutDelivery = async function() {
+  if (unsubNew) unsubNew();
+  if (unsubHistory) unsubHistory();
+  await signOut(auth);
+  showPage('page-login');
+  showToast('Logout हो गए');
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const dbDoc = await getDoc(doc(db, 'deliveryBoys', user.uid));
+    if (dbDoc.exists() && !dbDoc.data().banned) {
+      currentDBUser = user;
+      showPage('page-main');
+      document.getElementById('tab-new-orders').classList.add('active');
+      loadNewOrders();
+    } else {
+      await signOut(auth);
+    }
+  }
+});
+
+function loadNewOrders() {
+  const list = document.getElementById('new-orders-list');
+  list.innerHTML = '<div class="loading">Orders लोड हो रही हैं...</div>';
+  const q = query(collection(db, 'orders'), where('status', 'in', ['placed', 'out_for_delivery']));
+  unsubNew = onSnapshot(q, snap => {
+    const orders = [];
+    snap.forEach(d => orders.push({ id: d.id, ...d.data() }));
+    orders.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    document.getElementById('new-count').textContent = orders.length;
+    if (!orders.length) {
+      list.innerHTML = '<div class="empty-state"><span>✅</span>कोई नया Order नहीं</div>';
+      return;
+    }
+    list.innerHTML = orders.map(o => renderDeliveryCard(o)).join('');
+  });
+}
+
+function loadDeliveredOrders() {
+  const list = document.getElementById('history-orders-list');
+  list.innerHTML = '<div class="loading">History लोड हो रही है...</div>';
+  const q = query(collection(db, 'orders'), where('status', '==', 'delivered'));
+  unsubHistory = onSnapshot(q, snap => {
+    const orders = [];
+    snap.forEach(d => orders.push({ id: d.id, ...d.data() }));
+    orders.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    if (!orders.length) {
+      list.innerHTML = '<div class="empty-state"><span>📋</span>कोई History नहीं</div>';
+      return;
+    }
+    list.innerHTML = orders.map(o => `
+      <div class="order-card">
+        <div class="order-header">
+          <div class="order-id">Order ID: ${o.id.slice(0,8).toUpperCase()}</div>
+          <span class="status-badge status-delivered">✅ Delivered</span>
+        </div>
+        <div class="detail-row"><span>👤</span>${o.deliveryName}</div>
+        <div class="detail-row"><span>📍</span>${o.deliveryLocation}</div>
+        <div class="total-row"><span>Total</span><span>₹${o.totalAmount}</span></div>
+      </div>
+    `).join('');
+  });
+}
+
+function renderDeliveryCard(o) {
+  const locEncoded = encodeURIComponent(o.deliveryLocation || '');
+  const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${locEncoded}`;
+  const storedOtp = generatedOTPs[o.id];
+  return `
+  <div class="order-card" id="card-${o.id}">
+    <div class="order-header">
+      <div>
+        <div class="order-id">Order ID: ${o.id.slice(0,8).toUpperCase()}</div>
+        <div style="font-size:11px;color:#aaa">${o.createdAt ? new Date(o.createdAt.seconds * 1000).toLocaleString('hi-IN') : ''}</div>
+      </div>
+      <span class="status-badge ${o.status === 'out_for_delivery' ? 'status-out' : 'status-placed'}">${o.status === 'out_for_delivery' ? '🚴 Out' : '⏳ Placed'}</span>
+    </div>
+    <div class="detail-row"><span>👤</span><b>${o.deliveryName}</b></div>
+    <div class="detail-row"><span>🏠</span>${o.deliveryStreet}</div>
+    <div class="detail-row"><span>📍</span>${o.deliveryLocation}</div>
+    <div class="items-list">
+      ${(o.items || []).map(i => `<div class="item-row"><span>${i.name} × ${i.qty}</span><span>₹${i.price * i.qty}</span></div>`).join('')}
+    </div>
+    <div class="total-row"><span>Total</span><span>₹${o.totalAmount}</span></div>
+    <div class="action-btns">
+      <a class="go-btn" href="${mapUrl}" target="_blank">🗺️ Google Map पर Go</a>
+      <button class="otp-btn" onclick="generateOTP('${o.id}', '${o.userId || ''}')">📲 OTP भेजें</button>
+    </div>
+    ${storedOtp ? `<div style="margin-top:10px; background:#e8f5e9; padding:10px; border-radius:8px; font-size:13px; color:#1b5e20"><b>Generated OTP: ${storedOtp}</b> (User को बताएं)</div>` : ''}
+    <div class="otp-input-row" id="otp-row-${o.id}" style="display:${storedOtp ? 'flex' : 'none'}">
+      <input type="text" id="otp-input-${o.id}" placeholder="User से OTP लें" maxlength="6">
+      <button class="confirm-btn" onclick="confirmOTP('${o.id}')">Confirm</button>
+    </div>
+    ${o.deliveryOtp ? `<div style="margin-top:6px; font-size:12px; color:#888">Firebase OTP: ${o.deliveryOtp}</div>` : ''}
+  </div>`;
+}
+
+window.generateOTP = async function(orderId, userId) {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  generatedOTPs[orderId] = otp;
+  try {
+    await updateDoc(doc(db, 'orders', orderId), {
+      deliveryOtp: otp,
+      status: 'out_for_delivery'
+    });
+    showToast(`✅ OTP Generated: ${otp} — User को दिखाएं`);
+    // Re-render orders
+    loadNewOrders();
+  } catch (e) {
+    showToast('❌ OTP generate नहीं हुआ: ' + e.message);
+  }
+};
+
+window.confirmOTP = async function(orderId) {
+  const input = document.getElementById('otp-input-' + orderId);
+  if (!input) return;
+  const enteredOtp = input.value.trim();
+  const correctOtp = generatedOTPs[orderId];
+  if (!enteredOtp) return showToast('OTP डालें');
+  if (!correctOtp) return showToast('पहले OTP generate करें');
+  if (enteredOtp !== correctOtp) return showToast('❌ OTP गलत है');
+  try {
+    await updateDoc(doc(db, 'orders', orderId), {
+      status: 'delivered',
+      deliveredAt: serverTimestamp()
+    });
+    delete generatedOTPs[orderId];
+    showToast('✅ Order Delivered! बहुत बढ़िया!');
+  } catch (e) {
+    showToast('❌ Delivery confirm नहीं हुई');
+  }
+};
+
+function getErrorMsg(code) {
+  const msgs = { 'auth/user-not-found': 'ID नहीं मिली', 'auth/wrong-password': 'Password गलत', 'auth/invalid-credential': 'ID या Password गलत' };
+  return msgs[code] || 'Error हुई';
+}
+</script>
+</body>
+</html>
