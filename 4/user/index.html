@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel Order App</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background:#f5f5f5; color:#222; }
+  .hidden { display:none !important; }
+  .panel { min-height:100vh; display:flex; flex-direction:column; }
+
+  /* ─── TOP BAR ─── */
+  .topbar { background:#e65c00; color:#fff; padding:14px 16px; font-size:18px; font-weight:700; display:flex; align-items:center; gap:10px; }
+  .topbar span { flex:1; }
+  .topbar button { background:rgba(255,255,255,.25); border:none; color:#fff; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px; }
+
+  /* ─── BOTTOM NAV ─── */
+  .botnav { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #ddd; display:flex; z-index:100; }
+  .botnav button { flex:1; padding:12px 0; background:none; border:none; font-size:11px; color:#888; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; transition:.2s; }
+  .botnav button.active { color:#e65c00; }
+  .botnav button svg { width:22px; height:22px; }
+
+  /* ─── CONTENT ─── */
+  .content { flex:1; padding:12px; padding-bottom:70px; overflow-y:auto; }
+
+  /* ─── CARDS ─── */
+  .card { background:#fff; border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,.07); }
+  .card h3 { font-size:15px; margin-bottom:6px; }
+  .card p { font-size:13px; color:#666; }
+
+  /* ─── SEARCH BAR ─── */
+  .searchbar { display:flex; gap:8px; margin-bottom:12px; }
+  .searchbar input { flex:1; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; outline:none; }
+  .searchbar input:focus { border-color:#e65c00; }
+
+  /* ─── BUTTONS ─── */
+  .btn { padding:10px 18px; border:none; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; transition:.2s; }
+  .btn-primary { background:#e65c00; color:#fff; }
+  .btn-primary:hover { background:#c94e00; }
+  .btn-outline { background:#fff; border:1px solid #e65c00; color:#e65c00; }
+  .btn-danger { background:#e53935; color:#fff; }
+  .btn-success { background:#43a047; color:#fff; }
+  .btn-sm { padding:6px 12px; font-size:12px; border-radius:8px; }
+
+  /* ─── FORM ─── */
+  .form-group { margin-bottom:12px; }
+  .form-group label { display:block; font-size:13px; color:#555; margin-bottom:4px; }
+  .form-group input, .form-group select, .form-group textarea { width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:10px; font-size:14px; outline:none; }
+  .form-group input:focus { border-color:#e65c00; }
+  .form-row { display:flex; gap:8px; }
+  .form-row .form-group { flex:1; }
+
+  /* ─── HOTEL / DISH CARDS ─── */
+  .hotel-card { background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.08); margin-bottom:14px; cursor:pointer; }
+  .hotel-card img { width:100%; height:140px; object-fit:cover; }
+  .hotel-card .info { padding:12px; }
+  .hotel-card .info h3 { font-size:16px; }
+  .hotel-card .info p { font-size:13px; color:#888; }
+
+  .dish-row { display:flex; align-items:center; gap:10px; background:#fff; border-radius:12px; padding:10px; margin-bottom:10px; box-shadow:0 1px 6px rgba(0,0,0,.06); }
+  .dish-row img { width:60px; height:60px; object-fit:cover; border-radius:10px; flex-shrink:0; }
+  .dish-row .dish-info { flex:1; }
+  .dish-row .dish-info h4 { font-size:14px; }
+  .dish-row .dish-info span { font-size:12px; color:#e65c00; font-weight:600; }
+  .qty-ctrl { display:flex; align-items:center; gap:6px; }
+  .qty-ctrl button { width:28px; height:28px; border:1px solid #ddd; background:#f5f5f5; border-radius:8px; cursor:pointer; font-size:16px; }
+  .qty-ctrl span { min-width:22px; text-align:center; font-size:14px; font-weight:600; }
+
+  /* ─── ORDER CARD ─── */
+  .order-card { background:#fff; border-radius:14px; padding:14px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,.07); border-left:4px solid #e65c00; }
+  .order-card .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; margin-bottom:8px; }
+  .badge-pending { background:#fff3e0; color:#e65c00; }
+  .badge-delivered { background:#e8f5e9; color:#2e7d32; }
+
+  /* ─── LOGIN ─── */
+  .login-box { max-width:380px; margin:40px auto; background:#fff; border-radius:18px; padding:28px; box-shadow:0 4px 20px rgba(0,0,0,.1); }
+  .login-box h2 { text-align:center; margin-bottom:20px; color:#e65c00; }
+  .login-logo { text-align:center; font-size:48px; margin-bottom:10px; }
+
+  /* ─── FILTER CHIPS ─── */
+  .filter-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:12px; scrollbar-width:none; }
+  .filter-row::-webkit-scrollbar { display:none; }
+  .chip { padding:6px 14px; border:1px solid #ddd; border-radius:20px; font-size:12px; white-space:nowrap; cursor:pointer; background:#fff; }
+  .chip.active { background:#e65c00; color:#fff; border-color:#e65c00; }
+
+  /* ─── ADMIN TABLE ─── */
+  .admin-row { display:flex; align-items:center; gap:10px; padding:10px; background:#fff; border-radius:12px; margin-bottom:8px; box-shadow:0 1px 5px rgba(0,0,0,.06); }
+  .admin-row .meta { flex:1; }
+  .admin-row .meta h4 { font-size:14px; }
+  .admin-row .meta p { font-size:12px; color:#888; }
+  .admin-row .actions { display:flex; gap:6px; flex-wrap:wrap; }
+
+  /* ─── TOAST ─── */
+  #toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 20px; border-radius:20px; font-size:13px; z-index:9999; opacity:0; transition:.3s; pointer-events:none; white-space:nowrap; }
+  #toast.show { opacity:1; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:500; display:flex; align-items:flex-end; justify-content:center; }
+  .modal { background:#fff; border-radius:20px 20px 0 0; padding:20px; width:100%; max-width:480px; max-height:85vh; overflow-y:auto; }
+  .modal h3 { margin-bottom:16px; font-size:17px; }
+
+  .section-title { font-size:16px; font-weight:700; margin-bottom:12px; color:#333; }
+  .divider { height:1px; background:#eee; margin:16px 0; }
+
+  /* ─── PANEL SWITCHER (top right) ─── */
+  #panel-switcher { position:fixed; top:10px; right:10px; z-index:9999; }
+  #panel-switcher select { padding:6px 10px; border:2px solid #e65c00; border-radius:8px; font-size:12px; background:#fff; color:#e65c00; font-weight:700; cursor:pointer; }
+
+  /* Delivery map btn */
+  .map-btn { display:flex; align-items:center; gap:6px; background:#1565c0; color:#fff; border:none; border-radius:10px; padding:8px 14px; font-size:13px; cursor:pointer; }
+  .otp-input { letter-spacing:6px; font-size:20px; text-align:center; }
+
+  @media(max-width:480px) { .login-box { margin:20px 12px; } }
+</style>
+</head>
+<body>
+
+<!-- PANEL SWITCHER -->
+<div id="panel-switcher">
+  <select onchange="switchPanel(this.value)">
+    <option value="user">👤 User</option>
+    <option value="host">🏨 Host</option>
+    <option value="delivery">🛵 Delivery</option>
+    <option value="owner">👑 Owner</option>
+  </select>
+</div>
+
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════
+     USER PANEL
+════════════════════════════════════════════════ -->
+<div id="panel-user" class="panel">
+
+  <!-- LOGIN PAGE -->
+  <div id="u-login">
+    <div class="login-logo">🍽️</div>
+    <div class="login-box">
+      <h2>Hotel App</h2>
+      <div class="form-group">
+        <label>Email ID</label>
+        <input type="email" id="u-email" placeholder="आपकी Email ID">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="u-pass" placeholder="Password">
+      </div>
+      <div style="text-align:right; margin-bottom:12px;">
+        <a href="#" onclick="showSection('u-forget');return false;" style="color:#e65c00; font-size:13px;">Forget Password?</a>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="userLogin()">Enter</button>
+      <div style="text-align:center; margin-top:14px;">
+        <button class="btn btn-outline" style="width:100%" onclick="showSection('u-register')">Create New Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORGET PASSWORD -->
+  <div id="u-forget" class="hidden">
+    <div class="login-box">
+      <h2>Forget Password</h2>
+      <div class="form-group">
+        <label>Registered Email ID</label>
+        <input type="email" id="u-forget-email" placeholder="Email ID">
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="sendPasswordReset()">Send Reset Link</button>
+      <div style="text-align:center;margin-top:14px;">
+        <a href="#" onclick="showSection('u-login');return false;" style="color:#e65c00;font-size:13px;">← Back to Login</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="u-register" class="hidden">
+    <div class="login-box">
+      <h2>New Account बनाएं</h2>
+      <div class="form-group"><label>Name</label><input type="text" id="r-name" placeholder="आपका नाम"></div>
+      <div class="form-group"><label>Email ID</label><input type="email" id="r-email" placeholder="Email ID"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="r-pass" placeholder="Password"></div>
+      <div class="form-group">
+        <label>Mobile Number</label>
+        <div style="display:flex;gap:8px">
+          <input type="tel" id="r-mobile" placeholder="Mobile Number" style="flex:1">
+          <button class="btn btn-outline btn-sm" onclick="sendOTP()">Send OTP</button>
+        </div>
+      </div>
+      <div class="form-group"><label>OTP</label><input type="text" id="r-otp" class="otp-input" placeholder="• • • •" maxlength="6"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="createAccount()">Create Account</button>
+      <div style="text-align:center;margin-top:14px;">
+        <a href="#" onclick="showSection('u-login');return false;" style="color:#e65c00;font-size:13px;">← Back to Login</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP (after login) -->
+  <div id="u-app" class="hidden">
+    <div class="topbar">
+      <span id="u-topbar-title">🍽️ Hotels</span>
+      <button onclick="userLogout()">Logout</button>
+    </div>
+    <!-- Home Tab -->
+    <div id="u-tab-home" class="content">
+      <div class="searchbar">
+        <input type="text" id="u-hotel-search" placeholder="Hotel खोजें..." oninput="renderHotelList()">
+      </div>
+      <div id="u-hotel-list"></div>
+    </div>
+    <!-- Hotel Detail -->
+    <div id="u-tab-hotel" class="content hidden">
+      <button class="btn btn-outline btn-sm" style="margin-bottom:10px" onclick="goBackToHotels()">← Hotels पर वापस जाएं</button>
+      <div class="searchbar">
+        <input type="text" id="u-dish-search" placeholder="Dish खोजें..." oninput="renderDishList()">
+      </div>
+      <div class="filter-row" id="u-price-filters">
+        <span class="chip active" onclick="setPriceFilter(0,99999,this)">All</span>
+        <span class="chip" onclick="setPriceFilter(0,50,this)">₹0–50</span>
+        <span class="chip" onclick="setPriceFilter(0,100,this)">₹0–100</span>
+        <span class="chip" onclick="setPriceFilter(0,200,this)">₹0–200</span>
+        <span class="chip" onclick="setPriceFilter(0,500,this)">₹0–500</span>
+      </div>
+      <div id="u-dish-count" style="font-size:12px;color:#888;margin-bottom:8px"></div>
+      <div id="u-dish-list"></div>
+      <div id="u-cart-summary" class="hidden card" style="position:sticky;bottom:60px;border:2px solid #e65c00;background:#fff8f5">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div id="u-cart-count" style="font-size:13px;color:#888"></div>
+            <div id="u-cart-total" style="font-size:20px;font-weight:700;color:#e65c00"></div>
+          </div>
+          <button class="btn btn-primary" style="padding:12px 22px;font-size:15px" onclick="goBuy()">🛒 Buy</button>
+        </div>
+      </div>
+    </div>
+    <!-- Buy/Checkout Tab -->
+    <div id="u-tab-buy" class="content hidden">
+      <div class="section-title">🛒 Order Details</div>
+      <div id="u-order-items"></div>
+      <div class="card" style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700">
+          <span>Total Amount</span>
+          <span id="u-total-amt" style="color:#e65c00"></span>
+        </div>
+      </div>
+      <div class="section-title" style="margin-top:16px">📍 Delivery Details</div>
+      <div class="card">
+        <div class="form-group"><label>Customer Name</label><input type="text" id="u-cust-name" placeholder="आपका नाम"></div>
+        <div class="form-group"><label>Street / Address</label><input type="text" id="u-street" placeholder="Street / Mohalla"></div>
+        <div class="form-group">
+          <label>Location</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="u-location" placeholder="Location" style="flex:1">
+            <button class="btn btn-outline btn-sm" onclick="getCurrentLocation()">📍 Current</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:14px" onclick="placeOrder()">✅ Order Place करें</button>
+    </div>
+    <!-- Orders Tab -->
+    <div id="u-tab-orders" class="content hidden">
+      <div class="section-title">📦 My Orders</div>
+      <div id="u-my-orders"></div>
+    </div>
+    <!-- Profile Tab -->
+    <div id="u-tab-profile" class="content hidden">
+      <div class="card" style="text-align:center;padding:24px">
+        <div style="font-size:48px;margin-bottom:8px">👤</div>
+        <h3 id="u-profile-name">User</h3>
+        <p id="u-profile-email" style="color:#888;font-size:13px"></p>
+      </div>
+      <button class="btn btn-danger" style="width:100%" onclick="userLogout()">Logout</button>
+    </div>
+
+    <nav class="botnav">
+      <button class="active" onclick="setUserTab('home',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        Home
+      </button>
+      <button onclick="setUserTab('orders',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        Orders
+      </button>
+      <button onclick="setUserTab('profile',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        Profile
+      </button>
+    </nav>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     HOST PANEL
+════════════════════════════════════════════════ -->
+<div id="panel-host" class="panel hidden">
+  <div id="h-login">
+    <div class="login-logo">🏨</div>
+    <div class="login-box">
+      <h2>Host Login</h2>
+      <div class="form-group"><label>Host ID</label><input type="text" id="h-uid" placeholder="Host ID"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="h-pass" placeholder="Password"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="hostLogin()">Login</button>
+    </div>
+  </div>
+  <div id="h-app" class="hidden">
+    <div class="topbar"><span>🏨 Host Panel</span><button onclick="hostLogout()">Logout</button></div>
+    <div id="h-tab-new" class="content">
+      <div class="section-title">🔔 New Orders</div>
+      <div id="h-new-orders"></div>
+    </div>
+    <div id="h-tab-history" class="content hidden">
+      <div class="section-title">📋 Order History</div>
+      <div id="h-order-history"></div>
+    </div>
+    <nav class="botnav">
+      <button class="active" onclick="setHostTab('new',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        New Orders
+      </button>
+      <button onclick="setHostTab('history',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        History
+      </button>
+    </nav>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     DELIVERY BOY PANEL
+════════════════════════════════════════════════ -->
+<div id="panel-delivery" class="panel hidden">
+  <div id="d-login">
+    <div class="login-logo">🛵</div>
+    <div class="login-box">
+      <h2>Delivery Login</h2>
+      <div class="form-group"><label>Delivery ID</label><input type="text" id="d-uid" placeholder="Delivery ID"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="d-pass" placeholder="Password"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="deliveryLogin()">Login</button>
+    </div>
+  </div>
+  <div id="d-app" class="hidden">
+    <div class="topbar"><span>🛵 Delivery Panel</span><button onclick="deliveryLogout()">Logout</button></div>
+    <div id="d-tab-new" class="content">
+      <div class="section-title">📦 New Deliveries</div>
+      <div id="d-new-orders"></div>
+    </div>
+    <div id="d-tab-history" class="content hidden">
+      <div class="section-title">✅ Completed Deliveries</div>
+      <div id="d-order-history"></div>
+    </div>
+    <nav class="botnav">
+      <button class="active" onclick="setDeliveryTab('new',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+        New
+      </button>
+      <button onclick="setDeliveryTab('history',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        History
+      </button>
+    </nav>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     OWNER PANEL
+════════════════════════════════════════════════ -->
+<div id="panel-owner" class="panel hidden">
+  <div id="o-login">
+    <div class="login-logo">👑</div>
+    <div class="login-box">
+      <h2>Owner Login</h2>
+      <div class="form-group"><label>Owner ID</label><input type="email" id="o-uid" value="naitikjain240725@gmail.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="o-pass" value="jain6799"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="ownerLogin()">Login</button>
+    </div>
+  </div>
+  <div id="o-app" class="hidden">
+    <div class="topbar"><span id="o-topbar-title">👑 Owner Panel</span><button onclick="ownerLogout()">Logout</button></div>
+
+    <!-- Home Tab -->
+    <div id="o-tab-home" class="content">
+      <div class="section-title">🏨 Hotels Manage करें</div>
+      <button class="btn btn-primary btn-sm" style="margin-bottom:12px" onclick="showAddHotelForm()">+ New Hotel Add करें</button>
+      <div id="o-add-hotel-form" class="card hidden">
+        <h3 style="margin-bottom:12px">New Hotel</h3>
+        <div class="form-group"><label>Hotel Name</label><input type="text" id="o-h-name" placeholder="Hotel का नाम"></div>
+        <div class="form-group"><label>Image URL</label><input type="url" id="o-h-img" placeholder="https://..."></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="addHotel()">Add करें</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('o-add-hotel-form').classList.add('hidden')">Cancel</button>
+        </div>
+      </div>
+      <div id="o-hotel-list"></div>
+
+      <!-- Hotel Dishes Editor -->
+      <div id="o-hotel-editor" class="hidden">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('o-hotel-editor').classList.add('hidden');document.getElementById('o-hotel-list').classList.remove('hidden')">← Back</button>
+          <span id="o-editing-hotel-name" class="section-title" style="margin:0"></span>
+        </div>
+        <!-- Dish Names (Categories) -->
+        <div class="section-title">📂 Dish Categories</div>
+        <button class="btn btn-primary btn-sm" style="margin-bottom:10px" onclick="showAddDishNameForm()">+ Category Add करें</button>
+        <div id="o-add-dishname-form" class="card hidden">
+          <div class="form-group"><label>Category Name (जैसे: Pizza, Burger)</label><input type="text" id="o-dn-name" placeholder="Category name"></div>
+          <button class="btn btn-primary btn-sm" onclick="addDishName()">Add</button>
+        </div>
+        <div id="o-dishname-list"></div>
+
+        <!-- Dishes under selected category -->
+        <div id="o-dish-section" class="hidden">
+          <div style="display:flex;align-items:center;gap:10px;margin:12px 0 8px">
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('o-dish-section').classList.add('hidden')">← Categories</button>
+            <span id="o-editing-category-name" class="section-title" style="margin:0;font-size:14px;color:#e65c00"></span>
+          </div>
+          <div class="section-title" style="font-size:14px">🍽️ Dishes</div>
+          <button class="btn btn-primary btn-sm" style="margin-bottom:10px" onclick="showAddDishForm()">+ Dish Add करें</button>
+          <div id="o-add-dish-form" class="card hidden">
+            <div class="form-group"><label>Dish Name</label><input type="text" id="o-d-name" placeholder="जैसे: Cheese Pizza"></div>
+            <div class="form-group"><label>Image URL</label><input type="url" id="o-d-img" placeholder="https://..."></div>
+            <div class="form-row">
+              <div class="form-group"><label>Price (₹)</label><input type="number" id="o-d-price" placeholder="150"></div>
+              <div class="form-group"><label>Qty Available</label><input type="number" id="o-d-qty" placeholder="10"></div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="addDish()">Add</button>
+          </div>
+          <div id="o-dish-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passwords Tab -->
+    <div id="o-tab-passwords" class="content hidden">
+      <div class="section-title">🔐 Passwords Manage</div>
+
+      <div class="card" style="margin-bottom:12px">
+        <h3 style="margin-bottom:10px;color:#1565c0">🏨 Host IDs</h3>
+        <button class="btn btn-primary btn-sm" style="margin-bottom:10px" onclick="showAddStaffForm('host')">+ Host Add करें</button>
+        <div id="o-host-list"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px">
+        <h3 style="margin-bottom:10px;color:#1565c0">🛵 Delivery Boy IDs</h3>
+        <button class="btn btn-primary btn-sm" style="margin-bottom:10px" onclick="showAddStaffForm('delivery')">+ Delivery Boy Add करें</button>
+        <div id="o-delivery-list"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:10px;color:#c62828">👑 Owner Credentials</h3>
+        <div class="form-group"><label>New Owner ID (Email)</label><input type="email" id="o-new-uid" placeholder="New Email ID"></div>
+        <div class="form-group"><label>New Password</label><input type="password" id="o-new-pass" placeholder="New Password"></div>
+        <div class="form-group"><label>Current Password (Confirm)</label><input type="password" id="o-confirm-old" placeholder="Current Password"></div>
+        <button class="btn btn-danger btn-sm" onclick="changeOwnerCreds()">Change करें</button>
+        <div style="margin-top:10px;background:#fff3e0;border-radius:8px;padding:10px;font-size:13px">
+          <b>Current ID:</b> <span id="o-show-uid"></span><br>
+          <b>Current Password:</b> <span id="o-show-pass"></span>
+        </div>
+      </div>
+
+      <!-- Add Staff Modal -->
+      <div id="o-add-staff-modal" class="modal-overlay hidden">
+        <div class="modal">
+          <h3 id="o-staff-modal-title">Staff Add करें</h3>
+          <div class="form-group"><label>ID (Username)</label><input type="text" id="o-s-id" placeholder="Staff ID"></div>
+          <div class="form-group"><label>Password</label><input type="password" id="o-s-pass" placeholder="Password"></div>
+          <div class="form-group"><label>Name</label><input type="text" id="o-s-name" placeholder="नाम"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" onclick="addStaff()">Add</button>
+            <button class="btn btn-outline" onclick="closeStaffModal()">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Tab -->
+    <div id="o-tab-profile" class="content hidden">
+      <div class="section-title">👤 Restaurant Profile</div>
+      <div class="card">
+        <div style="text-align:center;margin-bottom:14px">
+          <img id="o-profile-img-preview" src="" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid #e65c00;display:none">
+          <div style="font-size:48px" id="o-profile-avatar">👑</div>
+        </div>
+        <div class="form-group"><label>Profile Image URL</label><input type="url" id="o-p-img" placeholder="https://..." oninput="previewOwnerImage(this.value)"></div>
+        <div class="form-group"><label>Owner Name</label><input type="text" id="o-p-name" placeholder="नाम"></div>
+        <div class="form-group"><label>About</label><textarea id="o-p-about" rows="3" placeholder="Restaurant के बारे में..." style="width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;font-size:14px"></textarea></div>
+        <div class="divider"></div>
+        <h4 style="margin-bottom:10px">Social Links</h4>
+        <div class="form-group"><label>WhatsApp Number</label><input type="tel" id="o-wa" placeholder="WhatsApp Number"></div>
+        <div class="form-group"><label>Instagram URL</label><input type="url" id="o-ig" placeholder="https://instagram.com/..."></div>
+        <div class="form-group"><label>Telegram Username</label><input type="text" id="o-tg" placeholder="@username"></div>
+        <div class="form-group"><label>Twitter/X URL</label><input type="url" id="o-tw" placeholder="https://twitter.com/..."></div>
+        <button class="btn btn-primary" style="width:100%" onclick="saveOwnerProfile()">Save Profile</button>
+      </div>
+      <div class="card" id="o-profile-display" style="display:none;margin-top:12px">
+        <div style="text-align:center;margin-bottom:12px">
+          <img id="o-disp-img" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #e65c00;display:none">
+          <h3 id="o-disp-name"></h3>
+          <p id="o-disp-about" style="font-size:13px;color:#666;margin-top:4px"></p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center" id="o-social-btns"></div>
+      </div>
+    </div>
+
+    <nav class="botnav">
+      <button class="active" onclick="setOwnerTab('home',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        Home
+      </button>
+      <button onclick="setOwnerTab('passwords',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM12 17c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z"/></svg>
+        Passwords
+      </button>
+      <button onclick="setOwnerTab('profile',this)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        Profile
+      </button>
+    </nav>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getDatabase, ref, set, get, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDYh83XSYKVdUnKh1OgBzuPOJRb9kNTxno",
+  authDomain: "my-hotel-b7e45.firebaseapp.com",
+  projectId: "my-hotel-b7e45",
+  storageBucket: "my-hotel-b7e45.firebasestorage.app",
+  messagingSenderId: "766471367677",
+  appId: "1:766471367677:web:6cb895ceecd170185a4794",
+  databaseURL: "https://my-hotel-b7e45-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const rtdb = getDatabase(app);
+
+// ─── GLOBAL STATE ───
+window._fb = { auth, db, rtdb, serverTimestamp, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, ref, set, get, push, onValue, update, remove };
+window._state = {
+  currentHotel: null,
+  cart: {},
+  priceFilter: { min: 0, max: 99999 },
+  ownerCreds: { id: 'naitikjain240725@gmail.com', pass: 'jain6799' },
+  editingHotelId: null,
+  editingCategoryId: null,
+  addingStaffType: null,
+  otpSent: null,
+  userInfo: null
+};
+
+// ─── TOAST ───
+window.toast = (msg, dur=3000) => {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+};
+
+// ─── PANEL SWITCH ───
+window.switchPanel = (p) => {
+  ['user','host','delivery','owner'].forEach(x => document.getElementById('panel-'+x).classList.add('hidden'));
+  document.getElementById('panel-'+p).classList.remove('hidden');
+};
+
+window.showSection = (id) => {
+  ['u-login','u-forget','u-register','u-app'].forEach(x => {
+    const el = document.getElementById(x);
+    if(el) el.classList.add('hidden');
+  });
+  const s = document.getElementById(id);
+  if(s) s.classList.remove('hidden');
+};
+
+// ─── USER AUTH ───
+window.sendOTP = () => {
+  const mob = document.getElementById('r-mobile').value;
+  if(!mob || mob.length < 10) { toast('Valid mobile number डालें'); return; }
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  window._state.otpSent = otp;
+  toast('OTP: ' + otp + ' (Demo Mode)');
+};
+
+window.createAccount = async () => {
+  const name = document.getElementById('r-name').value;
+  const email = document.getElementById('r-email').value;
+  const pass = document.getElementById('r-pass').value;
+  const mobile = document.getElementById('r-mobile').value;
+  const otp = document.getElementById('r-otp').value;
+  if (!name||!email||!pass||!mobile) { toast('सभी fields भरें'); return; }
+  if (otp !== window._state.otpSent) { toast('OTP गलत है'); return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await setDoc(doc(db, 'users', cred.user.uid), { name, email, mobile, createdAt: new Date().toISOString() });
+    toast('Account बन गया! Login करें');
+    showSection('u-login');
+  } catch(e) { toast('Error: ' + e.message); }
+};
+
+window.userLogin = async () => {
+  const email = document.getElementById('u-email').value;
+  const pass = document.getElementById('u-pass').value;
+  if(!email||!pass) { toast('Email और Password डालें'); return; }
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const snap = await getDoc(doc(db, 'users', cred.user.uid));
+    window._state.userInfo = snap.exists() ? snap.data() : { name: email, email };
+    document.getElementById('u-profile-name').textContent = window._state.userInfo.name;
+    document.getElementById('u-profile-email').textContent = email;
+    showSection('u-app');
+    loadHotels();
+    loadUserOrders();
+  } catch(e) { toast('Login failed: ' + e.message); }
+};
+
+window.userLogout = async () => {
+  await signOut(auth);
+  window._state.cart = {};
+  showSection('u-login');
+  toast('Logout हो गए');
+};
+
+window.sendPasswordReset = async () => {
+  const email = document.getElementById('u-forget-email').value;
+  if(!email) { toast('Email डालें'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    toast('Reset link भेज दिया गया!');
+    showSection('u-login');
+  } catch(e) { toast('Error: ' + e.message); }
+};
+
+// ─── USER TAB ───
+window.setUserTab = (tab, btn) => {
+  document.querySelectorAll('#panel-user .botnav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['home','hotel','buy','orders','profile'].forEach(t => {
+    const el = document.getElementById('u-tab-'+t);
+    if(el) el.classList.add('hidden');
+  });
+  document.getElementById('u-topbar-title').textContent = tab==='home'?'🍽️ Hotels':tab==='orders'?'📦 My Orders':'👤 Profile';
+  if(tab==='home') { document.getElementById('u-tab-home').classList.remove('hidden'); loadHotels(); }
+  else if(tab==='orders') { document.getElementById('u-tab-orders').classList.remove('hidden'); loadUserOrders(); }
+  else if(tab==='profile') document.getElementById('u-tab-profile').classList.remove('hidden');
+};
+
+// ─── LOAD HOTELS ───
+window.loadHotels = async () => {
+  try {
+    const snap = await getDocs(collection(db, 'hotels'));
+    window._allHotels = snap.docs.map(d => ({id:d.id,...d.data()})).filter(h=>!h.hidden);
+    renderHotelList();
+  } catch(e) { document.getElementById('u-hotel-list').innerHTML='<p style="color:#888;text-align:center">Hotels load नहीं हुए</p>'; }
+};
+
+window.renderHotelList = () => {
+  const q = document.getElementById('u-hotel-search').value.toLowerCase();
+  const hotels = (window._allHotels||[]).filter(h => h.name.toLowerCase().includes(q));
+  const el = document.getElementById('u-hotel-list');
+  if(!hotels.length) { el.innerHTML='<p style="text-align:center;color:#888;padding:30px">कोई Hotel नहीं मिला</p>'; return; }
+  el.innerHTML = hotels.map(h=>`
+    <div class="hotel-card" onclick="openHotel('${h.id}','${(h.name||'').replace(/'/g,"\\'")}')">
+      <img src="${h.image||'https://via.placeholder.com/400x140?text=Hotel'}" onerror="this.src='https://via.placeholder.com/400x140?text=Hotel'">
+      <div class="info"><h3>${h.name}</h3><p>Tap to view menu →</p></div>
+    </div>`).join('');
+};
+
+window.openHotel = async (id, name) => {
+  window._state.currentHotel = id;
+  window._state.currentHotelName = name;
+  window._state.cart = {};
+  ['u-tab-home','u-tab-orders','u-tab-profile'].forEach(t => {
+    const el=document.getElementById(t); if(el) el.classList.add('hidden');
+  });
+  document.getElementById('u-tab-hotel').classList.remove('hidden');
+  document.getElementById('u-topbar-title').textContent = '🍽️ ' + name;
+  window._state.priceFilter = {min:0,max:99999};
+  await loadAllDishes();
+  updateCartSummary();
+};
+
+window.loadAllDishes = async () => {
+  try {
+    // Load dish category names
+    const catSnap = await getDocs(collection(db,'hotels',window._state.currentHotel,'dishNames'));
+    window._allDishNames = catSnap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(d=>!d.hidden)
+      .sort((a,b)=>(a.order||0)-(b.order||0));
+    const catById = {};
+    window._allDishNames.forEach(c => { catById[c.id] = c.name; });
+
+    // Load dishes and attach category name
+    const snap = await getDocs(collection(db,'hotels',window._state.currentHotel,'dishes'));
+    window._allDishes = snap.docs.map(d=>({
+      id:d.id,...d.data(),
+      categoryName: catById[d.data().categoryId] || 'Other'
+    })).filter(d=>!d.hidden)
+      .sort((a,b)=>(a.order||0)-(b.order||0));
+    renderDishList();
+  } catch(e) { toast('Dishes load नहीं हुईं'); }
+};
+
+window.setPriceFilter = (min,max,chip) => {
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  window._state.priceFilter = {min,max};
+  renderDishList();
+};
+
+window.renderDishList = () => {
+  const q = (document.getElementById('u-dish-search').value||'').toLowerCase();
+  const {min,max} = window._state.priceFilter;
+  const dishes = (window._allDishes||[]).filter(d =>
+    d.name.toLowerCase().includes(q) && d.price>=min && d.price<=max
+  );
+  const el = document.getElementById('u-dish-list');
+  const countEl = document.getElementById('u-dish-count');
+  if(!dishes.length){
+    el.innerHTML='<p style="text-align:center;color:#888;padding:30px">कोई dish नहीं मिली</p>';
+    if(countEl) countEl.textContent='';
+    return;
+  }
+  if(countEl) countEl.textContent = `${dishes.length} dishes मिलीं`;
+
+  // Group by category
+  const catMap = {};
+  dishes.forEach(d => {
+    const cid = d.categoryId || '__none__';
+    if(!catMap[cid]) catMap[cid] = { name: d.categoryName || 'Other', dishes: [] };
+    catMap[cid].dishes.push(d);
+  });
+
+  // Use dishNames list for ordering if available
+  const orderedCatIds = (window._allDishNames || []).map(dn => dn.id);
+  const sortedKeys = [
+    ...orderedCatIds.filter(id => catMap[id]),
+    ...Object.keys(catMap).filter(k => !orderedCatIds.includes(k))
+  ];
+
+  el.innerHTML = sortedKeys.map(cid => {
+    const group = catMap[cid];
+    const dishRows = group.dishes.map(d => {
+      const qty = window._state.cart[d.id]?.qty||0;
+      return `<div class="dish-row">
+        <img src="${d.image||'https://via.placeholder.com/60?text=🍽️'}" onerror="this.src='https://via.placeholder.com/60?text=🍽️'">
+        <div class="dish-info">
+          <h4>${d.name}</h4>
+          <span>₹${d.price}</span>
+          ${d.totalQty?`<p style="font-size:11px;color:#999">Available: ${d.totalQty}</p>`:''}
+        </div>
+        <div class="qty-ctrl">
+          <button onclick="changeCart('${d.id}','${(d.name||'').replace(/'/g,"\\'")}',${d.price},${d.totalQty||999},-1)">−</button>
+          <span id="qty-${d.id}">${qty}</span>
+          <button onclick="changeCart('${d.id}','${(d.name||'').replace(/'/g,"\\'")}',${d.price},${d.totalQty||999},1)">+</button>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:#e65c00;padding:6px 0;border-bottom:2px solid #ffe0cc;margin-bottom:8px">🍽️ ${group.name}</div>
+      ${dishRows}
+    </div>`;
+  }).join('');
+};
+
+window.changeCart = (id,name,price,maxQty,delta) => {
+  const c = window._state.cart;
+  if(!c[id]) c[id]={name,price,qty:0};
+  c[id].qty = Math.max(0, Math.min(maxQty, c[id].qty+delta));
+  if(c[id].qty===0) delete c[id];
+  const el=document.getElementById('qty-'+id); if(el) el.textContent=c[id]?.qty||0;
+  updateCartSummary();
+};
+
+window.updateCartSummary = () => {
+  const c = window._state.cart;
+  const items = Object.values(c);
+  const total = items.reduce((s,i)=>s+i.price*i.qty,0);
+  const count = items.reduce((s,i)=>s+i.qty,0);
+  const el = document.getElementById('u-cart-summary');
+  if(count===0){el.classList.add('hidden');return;}
+  el.classList.remove('hidden');
+  document.getElementById('u-cart-count').textContent = `${count} items`;
+  document.getElementById('u-cart-total').textContent = `₹${total}`;
+};
+
+window.goBackToHotels = () => {
+  document.getElementById('u-tab-hotel').classList.add('hidden');
+  document.getElementById('u-tab-home').classList.remove('hidden');
+  document.getElementById('u-topbar-title').textContent='🍽️ Hotels';
+  window._state.cart={};
+  loadHotels();
+};
+
+window.goBuy = () => {
+  const items = Object.entries(window._state.cart);
+  if(!items.length){toast('Cart खाली है');return;}
+  document.getElementById('u-tab-hotel').classList.add('hidden');
+  document.getElementById('u-tab-buy').classList.remove('hidden');
+  document.getElementById('u-topbar-title').textContent='🛒 Checkout';
+  const total = items.reduce((s,[,i])=>s+i.price*i.qty,0);
+  document.getElementById('u-order-items').innerHTML = `
+    <button class="btn btn-outline btn-sm" style="margin-bottom:10px" onclick="goBackFromBuy()">← Menu पर वापस जाएं</button>
+    ` + items.map(([,i])=>`
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:10px">
+      <div><b>${i.name}</b><br><span style="font-size:12px;color:#888">₹${i.price} × ${i.qty}</span></div>
+      <b style="color:#e65c00">₹${i.price*i.qty}</b>
+    </div>`).join('');
+  document.getElementById('u-total-amt').textContent = '₹'+total;
+};
+
+window.goBackFromBuy = () => {
+  document.getElementById('u-tab-buy').classList.add('hidden');
+  document.getElementById('u-tab-hotel').classList.remove('hidden');
+  document.getElementById('u-topbar-title').textContent='🍽️ '+(window._state.currentHotelName||'Menu');
+  updateCartSummary();
+};
+
+window.getCurrentLocation = () => {
+  if(!navigator.geolocation){toast('GPS उपलब्ध नहीं');return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const loc = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+    document.getElementById('u-location').value=loc;
+    window._state.userCoords={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    toast('Location मिल गई!');
+  },()=>toast('Location access denied'));
+};
+
+window.placeOrder = async () => {
+  const name = document.getElementById('u-cust-name').value;
+  const street = document.getElementById('u-street').value;
+  const location = document.getElementById('u-location').value;
+  const items = Object.entries(window._state.cart);
+  if(!name||!location){toast('नाम और location भरें');return;}
+  if(!items.length){toast('Cart खाली है');return;}
+  const total = items.reduce((s,[,i])=>s+i.price*i.qty,0);
+  const otp = Math.floor(1000+Math.random()*9000).toString();
+  const user = auth.currentUser;
+  const order = {
+    userId: user?.uid||'guest',
+    userEmail: user?.email||'',
+    customerName: name,
+    street, location,
+    coords: window._state.userCoords||null,
+    hotelId: window._state.currentHotel,
+    hotelName: window._state.currentHotelName,
+    items: Object.fromEntries(items),
+    total, otp, status:'pending',
+    placedAt: new Date().toISOString()
+  };
+  try {
+    await addDoc(collection(db,'orders'), order);
+    toast('✅ Order place हो गया! OTP: '+otp);
+    window._state.cart={};
+    document.getElementById('u-tab-buy').classList.add('hidden');
+    document.getElementById('u-tab-orders').classList.remove('hidden');
+    document.getElementById('u-topbar-title').textContent='📦 My Orders';
+    loadUserOrders();
+  } catch(e){toast('Error: '+e.message);}
+};
+
+window.loadUserOrders = () => {
+  const user = auth.currentUser;
+  if(!user) return;
+  const el = document.getElementById('u-my-orders');
+  el.innerHTML = '<p style="text-align:center;color:#888;padding:20px">Loading...</p>';
+  // Real-time listener — auto-updates when delivery boy completes order
+  if(window._userOrdersUnsub) window._userOrdersUnsub();
+  window._userOrdersUnsub = onSnapshot(
+    query(collection(db,'orders'), where('userId','==',user.uid)),
+    (snap) => {
+      const orders = snap.docs.map(d=>({id:d.id,...d.data()}))
+        .sort((a,b)=>b.placedAt.localeCompare(a.placedAt));
+      if(!orders.length){el.innerHTML='<p style="text-align:center;color:#888;padding:30px">कोई order नहीं है</p>';return;}
+
+      // Show notification if any order just got delivered
+      snap.docChanges().forEach(change => {
+        if(change.type==='modified' && change.doc.data().status==='delivered'){
+          toast('🎉 आपका order deliver हो गया! (' + change.doc.data().hotelName + ')');
+        }
+      });
+
+      el.innerHTML = orders.map(o=>{
+        const itemList = Object.values(o.items).map(i=>`<span style="display:inline-block;background:#fff3e0;border-radius:6px;padding:2px 8px;font-size:12px;margin:2px">${i.name} ×${i.qty}</span>`).join('');
+        return `<div class="order-card" style="border-color:${o.status==='delivered'?'#43a047':'#e65c00'}">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div class="badge badge-${o.status==='delivered'?'delivered':'pending'}">${o.status==='delivered'?'✅ Delivered':'⏳ Pending'}</div>
+            <span style="font-size:11px;color:#aaa">${o.placedAt?.slice(0,16)?.replace('T',' ')||''}</span>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:4px">🏨 ${o.hotelName}</div>
+          <div style="margin-bottom:6px">${itemList}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:17px;font-weight:700;color:#e65c00">₹${o.total}</span>
+            ${o.status!=='delivered'
+              ? `<div style="font-size:12px;background:#e8f5e9;border-radius:8px;padding:4px 10px">OTP: <b style="color:#2e7d32;font-size:14px;letter-spacing:2px">${o.otp}</b></div>`
+              : `<span style="font-size:12px;color:#43a047;font-weight:600">Delivered ✅</span>`
+            }
+          </div>
+          ${o.status!=='delivered'?`<p style="font-size:11px;color:#999;margin-top:4px">यह OTP delivery boy को बताएं</p>`:''}
+        </div>`;
+      }).join('');
+    },
+    (err) => { el.innerHTML='<p style="color:#888">Orders load नहीं हुए</p>'; }
+  );
+};
+
+// ─── HOST LOGIN ───
+window.hostLogin = async () => {
+  const id = document.getElementById('h-uid').value;
+  const pass = document.getElementById('h-pass').value;
+  if(!id||!pass){toast('ID और Password डालें');return;}
+  try {
+    const snap = await getDocs(query(collection(db,'staff'),where('type','==','host'),where('uid','==',id),where('pass','==',pass),where('banned','==',false)));
+    if(snap.empty){toast('ID/Password गलत या ban है');return;}
+    document.getElementById('h-login').classList.add('hidden');
+    document.getElementById('h-app').classList.remove('hidden');
+    loadHostOrders();
+  } catch(e){toast('Error: '+e.message);}
+};
+
+window.hostLogout = () => {
+  document.getElementById('h-app').classList.add('hidden');
+  document.getElementById('h-login').classList.remove('hidden');
+  toast('Logout हो गए');
+};
+
+window.setHostTab = (tab,btn) => {
+  document.querySelectorAll('#panel-host .botnav button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['new','history'].forEach(t=>{
+    const el=document.getElementById('h-tab-'+t); if(el) el.classList.add('hidden');
+  });
+  document.getElementById('h-tab-'+tab).classList.remove('hidden');
+  if(tab==='new') loadHostOrders();
+  else loadHostHistory();
+};
+
+window.loadHostOrders = () => {
+  const el = document.getElementById('h-new-orders');
+  el.innerHTML='<p style="text-align:center;color:#888;padding:20px">Loading...</p>';
+  if(window._hostOrdersUnsub) window._hostOrdersUnsub();
+  window._hostOrdersUnsub = onSnapshot(
+    query(collection(db,'orders'), where('status','==','pending')),
+    (snap) => {
+      const orders = snap.docs.map(d=>({id:d.id,...d.data()}))
+        .sort((a,b)=>b.placedAt.localeCompare(a.placedAt));
+
+      // Alert on new order
+      snap.docChanges().forEach(change => {
+        if(change.type==='added' && change.doc.data().status==='pending'){
+          toast('🔔 नया Order आया! - ' + change.doc.data().customerName);
+        }
+      });
+
+      if(!orders.length){el.innerHTML='<p style="text-align:center;color:#888;padding:30px">कोई नया order नहीं</p>';return;}
+      el.innerHTML = orders.map(o=>{
+        const itemList = Object.values(o.items).map(i=>`${i.name} ×${i.qty}`).join(', ');
+        return `<div class="order-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div class="badge badge-pending">🔔 New Order</div>
+            <span style="font-size:11px;color:#aaa">${o.placedAt?.slice(0,16)?.replace('T',' ')||''}</span>
+          </div>
+          <h4 style="margin-bottom:4px">${o.customerName}</h4>
+          <p style="font-size:13px;margin-bottom:6px;color:#555">${itemList}</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:#fff8f5;border-radius:8px;padding:8px">
+            <div>
+              <div style="font-size:11px;color:#888">Total Amount</div>
+              <b style="color:#e65c00;font-size:16px">₹${o.total}</b>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:11px;color:#888">Location</div>
+              <span style="font-size:12px;color:#333">${o.location||o.street||'N/A'}</span>
+            </div>
+          </div>
+          <div style="margin-top:8px;font-size:12px;color:#666">
+            📞 <b>Email:</b> ${o.userEmail||'N/A'} &nbsp;|&nbsp; 📍 <b>Street:</b> ${o.street||'N/A'}
+          </div>
+        </div>`;
+      }).join('');
+    },
+    () => { el.innerHTML='<p>Orders load नहीं हुए</p>'; }
+  );
+};
+
+window.loadHostHistory = async () => {
+  try {
+    const snap = await getDocs(query(collection(db,'orders'),where('status','==','delivered')));
+    const orders = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.placedAt.localeCompare(a.placedAt));
+    const el = document.getElementById('h-order-history');
+    if(!orders.length){el.innerHTML='<p style="text-align:center;color:#888;padding:30px">कोई delivered order नहीं</p>';return;}
+    el.innerHTML = orders.map(o=>`
+      <div class="order-card" style="border-color:#43a047">
+        <div class="badge badge-delivered">✅ Delivered</div>
+        <h4>${o.customerName}</h4>
+        <p style="font-size:13px">${Object.values(o.items).map(i=>`${i.name} ×${i.qty}`).join(', ')}</p>
+        <b style="color:#43a047">₹${o.total}</b>
+      </div>`).join('');
+  } catch(e){}
+};
+
+// ─── DELIVERY LOGIN ───
+window.deliveryLogin = async () => {
+  const id = document.getElementById('d-uid').value;
+  const pass = document.getElementById('d-pass').value;
+  if(!id||!pass){toast('ID और Password डालें');return;}
+  try {
+    const snap = await getDocs(query(collection(db,'staff'),where('type','==','delivery'),where('uid','==',id),where('pass','==',pass),where('banned','==',false)));
+    if(snap.empty){toast('ID/Password गलत या ban है');return;}
+    document.getElementById('d-login').classList.add('hidden');
+    document.getElementById('d-app').classList.remove('hidden');
+    loadDeliveryOrders();
+  } catch(e){toast('Error: '+e.message);}
+};
+
+window.deliveryLogout = () => {
+  document.getElementById('d-app').classList.add('hidden');
+  document.getElementById('d-login').classList.remove('hidden');
+  toast('Logout हो गए');
+};
+
+window.setDeliveryTab = (tab,btn) => {
+  document.querySelectorAll('#panel-delivery .botnav button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['new','history'].forEach(t=>{const el=document.getElementById('d-tab-'+t);if(el)el.classList.add('hidden');});
+  document.getElementById('d-tab-'+tab).classList.remove('hidden');
+  if(tab==='new') loadDeliveryOrders();
+  else loadDeliveryHistory();
+};
+
+window.loadDeliveryOrders = () => {
+  const el = document.getElementById('d-new-orders');
+  el.innerHTML='<p style="text-align:center;color:#888;padding:20px">Loading...</p>';
+  if(window._deliveryOrdersUnsub) window._deliveryOrdersUnsub();
+  window._deliveryOrdersUnsub = onSnapshot(
+    query(collection(db,'orders'), where('status','==','pending')),
+    (snap) => {
+      const orders = snap.docs.map(d=>({id:d.id,...d.data()}))
+        .sort((a,b)=>b.placedAt.localeCompare(a.placedAt));
+      if(!orders.length){el.innerHTML='<p style="text-align:center;color:#888;padding:30px">कोई नई delivery नहीं</p>';return;}
+      el.innerHTML = orders.map(o=>{
+        const lat=o.coords?.lat, lng=o.coords?.lng;
+        const mapsUrl = lat&&lng
+          ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((o.location||'')+' '+(o.street||''))}`;
+        const itemList = Object.values(o.items).map(i=>`${i.name} ×${i.qty}`).join(', ');
+        return `<div class="order-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div class="badge badge-pending">🛵 Deliver</div>
+            <span style="font-size:11px;color:#aaa">${o.placedAt?.slice(0,16)?.replace('T',' ')||''}</span>
+          </div>
+          <h4 style="margin-bottom:4px">👤 ${o.customerName}</h4>
+          <p style="font-size:13px;color:#555;margin-bottom:6px">${itemList}</p>
+          <div style="background:#fff8f5;border-radius:10px;padding:10px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:11px;color:#888">Total</div>
+                <b style="color:#e65c00;font-size:16px">₹${o.total}</b>
+              </div>
+              <a href="${mapsUrl}" target="_blank" class="map-btn">🗺️ Navigate</a>
+            </div>
+            <div style="margin-top:8px;font-size:12px;color:#666">
+              📍 ${o.location||'N/A'} ${o.street?'| '+o.street:''}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm" onclick="sendDeliveryOTP('${o.id}','${o.otp}')">📲 OTP भेजें</button>
+            <input type="text" placeholder="OTP" id="d-otp-${o.id}" maxlength="4" style="width:80px;padding:8px;border:2px solid #e65c00;border-radius:8px;font-size:16px;letter-spacing:4px;text-align:center;font-weight:700">
+            <button class="btn btn-success btn-sm" onclick="verifyDeliveryOTP('${o.id}','${o.otp}')">✅ Verify</button>
+          </div>
+        </div>`;
+      }).join('');
+    },
+    () => { el.innerHTML='<p>Orders load नहीं हुए</p>'; }
+  );
+};
+
+window.sendDeliveryOTP = (orderId, otp) => {
+  toast('OTP (Demo): ' + otp + ' → Customer को भेजा');
+};
+
+window.verifyDeliveryOTP = async (orderId, correctOtp) => {
+  const input = document.getElementById('d-otp-'+orderId).value;
+  if(input !== correctOtp){toast('❌ गलत OTP');return;}
+  try {
+    await updateDoc(doc(db,'orders',orderId),{status:'delivered',deliveredAt:new Date().toISOString()});
+    toast('✅ Delivery Complete!');
+    loadDeliveryOrders();
+  } catch(e){toast('Error: '+e.message);}
+};
+
+window.loadDeliveryHistory = async () => {
+  try {
+    const snap = await getDocs(query(collection(db,'orders'),where('status','==','delivered')));
+    const orders = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.placedAt.localeCompare(a.placedAt));
+    const el = document.getElementById('d-order-history');
+    if(!orders.length){el.innerHTML='<p style="text-align:center;color:#888;padding:30px">कोई completed delivery नहीं</p>';return;}
+    el.innerHTML = orders.map(o=>`
+      <div class="order-card" style="border-color:#43a047">
+        <div class="badge badge-delivered">✅ Delivered</div>
+        <h4>${o.customerName}</h4>
+        <p style="font-size:13px">${Object.values(o.items).map(i=>`${i.name} ×${i.qty}`).join(', ')}</p>
+        <b style="color:#43a047">₹${o.total}</b>
+      </div>`).join('');
+  } catch(e){}
+};
+
+// ─── OWNER LOGIN ───
+window.ownerLogin = () => {
+  const id = document.getElementById('o-uid').value;
+  const pass = document.getElementById('o-pass').value;
+  if(id===window._state.ownerCreds.id && pass===window._state.ownerCreds.pass){
+    document.getElementById('o-login').classList.add('hidden');
+    document.getElementById('o-app').classList.remove('hidden');
+    document.getElementById('o-show-uid').textContent = window._state.ownerCreds.id;
+    document.getElementById('o-show-pass').textContent = window._state.ownerCreds.pass;
+    loadOwnerHotels();
+    loadStaffList();
+    loadOwnerProfile();
+  } else { toast('ID या Password गलत है'); }
+};
+
+window.ownerLogout = () => {
+  document.getElementById('o-app').classList.add('hidden');
+  document.getElementById('o-login').classList.remove('hidden');
+  toast('Logout हो गए');
+};
+
+window.setOwnerTab = (tab,btn) => {
+  document.querySelectorAll('#panel-owner .botnav button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['home','passwords','profile'].forEach(t=>{const el=document.getElementById('o-tab-'+t);if(el)el.classList.add('hidden');});
+  document.getElementById('o-tab-'+tab).classList.remove('hidden');
+  document.getElementById('o-topbar-title').textContent = tab==='home'?'👑 Hotels':tab==='passwords'?'🔐 Passwords':'👤 Profile';
+};
+
+// ─── OWNER HOTELS ───
+window.loadOwnerHotels = async () => {
+  try {
+    const snap = await getDocs(collection(db,'hotels'));
+    window._ownerHotels = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderOwnerHotels();
+  } catch(e){toast('Hotels load नहीं हुए');}
+};
+
+window.renderOwnerHotels = () => {
+  const el = document.getElementById('o-hotel-list');
+  if(!window._ownerHotels?.length){el.innerHTML='<p style="color:#888">कोई hotel नहीं</p>';return;}
+  el.innerHTML = window._ownerHotels.map(h=>`
+    <div class="admin-row">
+      <img src="${h.image||'https://via.placeholder.com/50?text=🏨'}" style="width:50px;height:50px;object-fit:cover;border-radius:10px" onerror="this.src='https://via.placeholder.com/50?text=🏨'">
+      <div class="meta"><h4>${h.name}</h4><p>${h.hidden?'🔴 Hidden':'🟢 Visible'}</p></div>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" onclick="editHotel('${h.id}')">Edit</button>
+        <button class="btn btn-${h.hidden?'success':'outline'} btn-sm" onclick="toggleHotelVisibility('${h.id}',${!!h.hidden})">${h.hidden?'Show':'Hide'}</button>
+        <button class="btn btn-outline btn-sm" onclick="openHotelEditor('${h.id}','${(h.name||'').replace(/'/g,"\\'")}')">Menu</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteHotel('${h.id}')">Del</button>
+      </div>
+    </div>`).join('');
+};
+
+window.showAddHotelForm = () => {
+  document.getElementById('o-add-hotel-form').classList.remove('hidden');
+};
+
+window.addHotel = async () => {
+  const name = document.getElementById('o-h-name').value;
+  const image = document.getElementById('o-h-img').value;
+  if(!name){toast('Hotel का नाम डालें');return;}
+  try {
+    await addDoc(collection(db,'hotels'),{name,image,hidden:false,createdAt:new Date().toISOString()});
+    toast('Hotel add हो गया!');
+    document.getElementById('o-add-hotel-form').classList.add('hidden');
+    document.getElementById('o-h-name').value='';
+    document.getElementById('o-h-img').value='';
+    loadOwnerHotels();
+  } catch(e){toast('Error: '+e.message);}
+};
+
+window.editHotel = (id) => {
+  const h = window._ownerHotels.find(x=>x.id===id);
+  if(!h) return;
+  const newName = prompt('Hotel का नया नाम:', h.name);
+  if(!newName) return;
+  const newImg = prompt('New Image URL:', h.image||'');
+  updateDoc(doc(db,'hotels',id),{name:newName,image:newImg||h.image||''}).then(()=>{toast('Updated!');loadOwnerHotels();}).catch(e=>toast(e.message));
+};
+
+window.toggleHotelVisibility = async (id,isHidden) => {
+  await updateDoc(doc(db,'hotels',id),{hidden:!isHidden});
+  toast(!isHidden?'Hotel hidden किया':'Hotel show किया');
+  loadOwnerHotels();
+};
+
+window.deleteHotel = async (id) => {
+  if(!confirm('Hotel delete करें?')) return;
+  await deleteDoc(doc(db,'hotels',id));
+  toast('Hotel delete हो गया');
+  loadOwnerHotels();
+};
+
+window.openHotelEditor = (id, name) => {
+  window._state.editingHotelId = id;
+  document.getElementById('o-hotel-list').classList.add('hidden');
+  document.getElementById('o-add-hotel-form').classList.add('hidden');
+  document.getElementById('o-hotel-editor').classList.remove('hidden');
+  document.getElementById('o-dish-section').classList.add('hidden');
+  document.getElementById('o-editing-hotel-name').textContent = '🍽️ ' + name;
+  loadDishNames();
+};
+
+// ─── DISH CATEGORIES (DISH NAMES) ───
+window.loadDishNames = async () => {
+  try {
+    const snap = await getDocs(collection(db,'hotels',window._state.editingHotelId,'dishNames'));
+    window._dishNames = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderDishNames();
+  } catch(e){toast('Categories load नहीं हुईं');}
+};
+
+window.renderDishNames = () => {
+  const el = document.getElementById('o-dishname-list');
+  if(!window._dishNames?.length){el.innerHTML='<p style="color:#888">कोई category नहीं</p>';return;}
+  el.innerHTML = window._dishNames.map((dn,i)=>`
+    <div class="admin-row">
+      <div style="width:28px;height:28px;background:#e65c00;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${i+1}</div>
+      <div class="meta"><h4>${dn.name}</h4></div>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" onclick="moveDishName('${dn.id}',-1)">↑</button>
+        <button class="btn btn-outline btn-sm" onclick="moveDishName('${dn.id}',1)">↓</button>
+        <button class="btn btn-outline btn-sm" onclick="editDishName('${dn.id}')">Edit</button>
+        <button class="btn btn-primary btn-sm" onclick="openDishCategory('${dn.id}','${(dn.name||'').replace(/'/g,"\\'")}')">Dishes</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteDishName('${dn.id}')">Del</button>
+      </div>
+    </div>`).join('');
+};
+
+window.showAddDishNameForm = () => document.getElementById('o-add-dishname-form').classList.remove('hidden');
+
+window.addDishName = async () => {
+  const name = document.getElementById('o-dn-name').value;
+  if(!name){toast('Category name डालें');return;}
+  const order = (window._dishNames?.length||0);
+  await addDoc(collection(db,'hotels',window._state.editingHotelId,'dishNames'),{name,order,hidden:false});
+  toast('Category add हो गई!');
+  document.getElementById('o-dn-name').value='';
+  document.getElementById('o-add-dishname-form').classList.add('hidden');
+  loadDishNames();
+};
+
+window.editDishName = (id) => {
+  const dn = window._dishNames.find(x=>x.id===id);
+  const newName = prompt('Category का नया नाम:', dn?.name||'');
+  if(!newName) return;
+  updateDoc(doc(db,'hotels',window._state.editingHotelId,'dishNames',id),{name:newName}).then(()=>{toast('Updated!');loadDishNames();});
+};
+
+window.deleteDishName = async (id) => {
+  if(!confirm('Category delete करें?')) return;
+  await deleteDoc(doc(db,'hotels',window._state.editingHotelId,'dishNames',id));
+  toast('Category delete हो गई');
+  loadDishNames();
+};
+
+window.moveDishName = (id,dir) => {
+  const idx = window._dishNames.findIndex(x=>x.id===id);
+  const newIdx = idx+dir;
+  if(newIdx<0||newIdx>=window._dishNames.length) return;
+  [window._dishNames[idx],window._dishNames[newIdx]]=[window._dishNames[newIdx],window._dishNames[idx]];
+  window._dishNames.forEach((d,i)=>updateDoc(doc(db,'hotels',window._state.editingHotelId,'dishNames',d.id),{order:i}));
+  renderDishNames();
+};
+
+window.openDishCategory = (catId, catName) => {
+  window._state.editingCategoryId = catId;
+  document.getElementById('o-dish-section').classList.remove('hidden');
+  document.getElementById('o-editing-category-name').textContent = catName;
+  loadDishes();
+};
+
+// ─── DISHES ───
+window.loadDishes = async () => {
+  try {
+    const snap = await getDocs(collection(db,'hotels',window._state.editingHotelId,'dishes'));
+    window._editingDishes = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(d=>d.categoryId===window._state.editingCategoryId)
+      .sort((a,b)=>(a.order||0)-(b.order||0));
+    renderDishes();
+  } catch(e){toast('Dishes load नहीं हुईं');}
+};
+
+window.renderDishes = () => {
+  const el = document.getElementById('o-dish-list');
+  if(!window._editingDishes?.length){el.innerHTML='<p style="color:#888">कोई dish नहीं</p>';return;}
+  el.innerHTML = window._editingDishes.map((d,i)=>`
+    <div class="admin-row">
+      <div style="width:24px;font-size:12px;font-weight:700;color:#e65c00">${i+1}</div>
+      <img src="${d.image||'https://via.placeholder.com/40?text=🍽️'}" style="width:44px;height:44px;object-fit:cover;border-radius:8px" onerror="this.src='https://via.placeholder.com/40?text=🍽️'">
+      <div class="meta">
+        <h4>${d.name}</h4>
+        <p>₹${d.price} | Qty: ${d.totalQty||'—'} | ${d.hidden?'🔴 Hidden':'🟢 Visible'}</p>
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" onclick="moveDish('${d.id}',-1)">↑</button>
+        <button class="btn btn-outline btn-sm" onclick="moveDish('${d.id}',1)">↓</button>
+        <button class="btn btn-outline btn-sm" onclick="editDish('${d.id}')">Edit</button>
+        <button class="btn btn-${d.hidden?'success':'outline'} btn-sm" onclick="toggleDish('${d.id}',${!!d.hidden})">${d.hidden?'Show':'Hide'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteDish('${d.id}')">Del</button>
+      </div>
+    </div>`).join('');
+};
+
+window.showAddDishForm = () => document.getElementById('o-add-dish-form').classList.remove('hidden');
+
+window.addDish = async () => {
+  const name=document.getElementById('o-d-name').value;
+  const image=document.getElementById('o-d-img').value;
+  const price=parseFloat(document.getElementById('o-d-price').value)||0;
+  const totalQty=parseInt(document.getElementById('o-d-qty').value)||0;
+  if(!name||!price){toast('Dish name और price डालें');return;}
+  const order=(window._editingDishes?.length||0);
+  await addDoc(collection(db,'hotels',window._state.editingHotelId,'dishes'),{
+    name,image,price,totalQty,categoryId:window._state.editingCategoryId,order,hidden:false
+  });
+  toast('Dish add हो गई!');
+  ['o-d-name','o-d-img','o-d-price','o-d-qty'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('o-add-dish-form').classList.add('hidden');
+  loadDishes();
+};
+
+window.editDish = (id) => {
+  const d = window._editingDishes.find(x=>x.id===id);
+  const newName = prompt('Dish का नया नाम:',d?.name||'');
+  if(!newName) return;
+  const newPrice = prompt('New Price:',d?.price||0);
+  const newImg = prompt('New Image URL:',d?.image||'');
+  const newQty = prompt('New Qty:',d?.totalQty||0);
+  updateDoc(doc(db,'hotels',window._state.editingHotelId,'dishes',id),{
+    name:newName,price:parseFloat(newPrice)||d.price,image:newImg||d.image||'',totalQty:parseInt(newQty)||d.totalQty||0
+  }).then(()=>{toast('Updated!');loadDishes();});
+};
+
+window.toggleDish = async (id,isHidden) => {
+  await updateDoc(doc(db,'hotels',window._state.editingHotelId,'dishes',id),{hidden:!isHidden});
+  toast(!isHidden?'Hidden किया':'Visible किया');
+  loadDishes();
+};
+
+window.deleteDish = async (id) => {
+  if(!confirm('Dish delete करें?')) return;
+  await deleteDoc(doc(db,'hotels',window._state.editingHotelId,'dishes',id));
+  toast('Dish delete हो गई');
+  loadDishes();
+};
+
+window.moveDish = (id,dir) => {
+  const idx=window._editingDishes.findIndex(x=>x.id===id);
+  const newIdx=idx+dir;
+  if(newIdx<0||newIdx>=window._editingDishes.length) return;
+  [window._editingDishes[idx],window._editingDishes[newIdx]]=[window._editingDishes[newIdx],window._editingDishes[idx]];
+  window._editingDishes.forEach((d,i)=>updateDoc(doc(db,'hotels',window._state.editingHotelId,'dishes',d.id),{order:i}));
+  renderDishes();
+};
+
+// ─── OWNER STAFF ───
+window.loadStaffList = async () => {
+  try {
+    const snap = await getDocs(collection(db,'staff'));
+    window._staff = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderStaff('host','o-host-list');
+    renderStaff('delivery','o-delivery-list');
+  } catch(e){}
+};
+
+window.renderStaff = (type,elId) => {
+  const el=document.getElementById(elId);
+  const list=(window._staff||[]).filter(s=>s.type===type);
+  if(!list.length){el.innerHTML='<p style="color:#888;font-size:13px">कोई '+type+' नहीं</p>';return;}
+  el.innerHTML=list.map(s=>`
+    <div class="admin-row">
+      <div class="meta"><h4>${s.name||s.uid}</h4><p>ID: ${s.uid} | ${s.banned?'🔴 Banned':'🟢 Active'}</p></div>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" onclick="editStaff('${s.id}')">Edit</button>
+        <button class="btn btn-${s.banned?'success':'danger'} btn-sm" onclick="toggleBanStaff('${s.id}',${!!s.banned})">${s.banned?'Unban':'Ban'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStaff('${s.id}')">Del</button>
+      </div>
+    </div>`).join('');
+};
+
+window.showAddStaffForm = (type) => {
+  window._state.addingStaffType=type;
+  document.getElementById('o-staff-modal-title').textContent=(type==='host'?'Host':'Delivery Boy')+' Add करें';
+  document.getElementById('o-add-staff-modal').classList.remove('hidden');
+};
+
+window.closeStaffModal = () => {
+  document.getElementById('o-add-staff-modal').classList.add('hidden');
+  ['o-s-id','o-s-pass','o-s-name'].forEach(id=>document.getElementById(id).value='');
+};
+
+window.addStaff = async () => {
+  const uid=document.getElementById('o-s-id').value;
+  const pass=document.getElementById('o-s-pass').value;
+  const name=document.getElementById('o-s-name').value;
+  const type=window._state.addingStaffType;
+  if(!uid||!pass){toast('ID और Password डालें');return;}
+  await addDoc(collection(db,'staff'),{uid,pass,name,type,banned:false,createdAt:new Date().toISOString()});
+  toast('Staff add हो गया!');
+  closeStaffModal();
+  loadStaffList();
+};
+
+window.editStaff = (id) => {
+  const s=window._staff.find(x=>x.id===id);
+  const newPass=prompt('नया Password:',s?.pass||'');
+  if(!newPass) return;
+  const newName=prompt('नया नाम:',s?.name||'');
+  updateDoc(doc(db,'staff',id),{pass:newPass,name:newName||s?.name}).then(()=>{toast('Updated!');loadStaffList();});
+};
+
+window.toggleBanStaff = async (id,isBanned) => {
+  await updateDoc(doc(db,'staff',id),{banned:!isBanned});
+  toast(!isBanned?'Ban किया':'Unban किया');
+  loadStaffList();
+};
+
+window.deleteStaff = async (id) => {
+  if(!confirm('Staff delete करें?')) return;
+  await deleteDoc(doc(db,'staff',id));
+  toast('Staff delete हो गया');
+  loadStaffList();
+};
+
+// ─── OWNER CREDS CHANGE ───
+window.changeOwnerCreds = () => {
+  const newId=document.getElementById('o-new-uid').value;
+  const newPass=document.getElementById('o-new-pass').value;
+  const confirm_=document.getElementById('o-confirm-old').value;
+  if(confirm_!==window._state.ownerCreds.pass){toast('Current password गलत है');return;}
+  if(!newId||!newPass){toast('New ID और Password डालें');return;}
+  window._state.ownerCreds={id:newId,pass:newPass};
+  document.getElementById('o-show-uid').textContent=newId;
+  document.getElementById('o-show-pass').textContent=newPass;
+  toast('Owner credentials change हो गए!');
+  ['o-new-uid','o-new-pass','o-confirm-old'].forEach(id=>document.getElementById(id).value='');
+};
+
+// ─── OWNER PROFILE ───
+window.previewOwnerImage = (url) => {
+  const prev=document.getElementById('o-profile-img-preview');
+  const av=document.getElementById('o-profile-avatar');
+  if(url){prev.src=url;prev.style.display='block';av.style.display='none';}
+  else{prev.style.display='none';av.style.display='block';}
+};
+
+window.saveOwnerProfile = async () => {
+  const profile = {
+    image:document.getElementById('o-p-img').value,
+    name:document.getElementById('o-p-name').value,
+    about:document.getElementById('o-p-about').value,
+    wa:document.getElementById('o-wa').value,
+    ig:document.getElementById('o-ig').value,
+    tg:document.getElementById('o-tg').value,
+    tw:document.getElementById('o-tw').value
+  };
+  try {
+    await setDoc(doc(db,'settings','ownerProfile'),profile);
+    toast('Profile save हो गई!');
+    renderOwnerProfile(profile);
+  } catch(e){toast('Error: '+e.message);}
+};
+
+window.loadOwnerProfile = async () => {
+  try {
+    const snap=await getDoc(doc(db,'settings','ownerProfile'));
+    if(snap.exists()){
+      const p=snap.data();
+      document.getElementById('o-p-img').value=p.image||'';
+      document.getElementById('o-p-name').value=p.name||'';
+      document.getElementById('o-p-about').value=p.about||'';
+      document.getElementById('o-wa').value=p.wa||'';
+      document.getElementById('o-ig').value=p.ig||'';
+      document.getElementById('o-tg').value=p.tg||'';
+      document.getElementById('o-tw').value=p.tw||'';
+      if(p.image) previewOwnerImage(p.image);
+      renderOwnerProfile(p);
+    }
+  } catch(e){}
+};
+
+window.renderOwnerProfile = (p) => {
+  const disp=document.getElementById('o-profile-display');
+  disp.style.display='block';
+  document.getElementById('o-disp-name').textContent=p.name||'';
+  document.getElementById('o-disp-about').textContent=p.about||'';
+  const img=document.getElementById('o-disp-img');
+  if(p.image){img.src=p.image;img.style.display='block';} else img.style.display='none';
+  const socials=[];
+  if(p.wa) socials.push(`<a href="https://wa.me/${p.wa.replace(/\D/g,'')}" target="_blank" style="background:#25D366;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;text-decoration:none">💬 WhatsApp</a>`);
+  if(p.ig) socials.push(`<a href="${p.ig}" target="_blank" style="background:#E1306C;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;text-decoration:none">📸 Instagram</a>`);
+  if(p.tg) socials.push(`<a href="https://t.me/${p.tg.replace('@','')}" target="_blank" style="background:#2CA5E0;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;text-decoration:none">✈️ Telegram</a>`);
+  if(p.tw) socials.push(`<a href="${p.tw}" target="_blank" style="background:#1DA1F2;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;text-decoration:none">🐦 Twitter</a>`);
+  document.getElementById('o-social-btns').innerHTML=socials.join('');
+};
+
+// ─── INIT ───
+window.switchPanel('user');
+</script>
+</body>
+</html>
