@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Owner Panel - Food Delivery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, addDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDYh83XSYKVdUnKh1OgBzuPOJRb9kNTxno",
+            authDomain: "my-hotel-b7e45.firebaseapp.com",
+            projectId: "my-hotel-b7e45",
+            storageBucket: "my-hotel-b7e45.firebasestorage.app",
+            messagingSenderId: "766471367677",
+            appId: "1:766471367677:web:6cb895ceecd170185a4794"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.appState = { currentOwner: null, hotels: [], dishes: [] };
+
+        window.showToast = (msg, type = 'info') => {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg z-[9999] text-white font-medium ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'}`;
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        };
+
+        window.formatCurrency = (amount) => '₹' + parseFloat(amount || 0).toFixed(2);
+
+        window.showScreen = (screenId) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            const el = document.getElementById(screenId);
+            if (el) el.classList.remove('hidden');
+            window.scrollTo(0, 0);
+        };
+
+        // Owner Login
+        window.loginOwner = () => {
+            const email = document.getElementById('owner-email').value;
+            const password = document.getElementById('owner-password').value;
+            if (email === 'naitikjain240725@gmail.com' && password === 'jain6799') {
+                window.appState.currentOwner = { email, name: 'Owner' };
+                showToast('Owner login successful!', 'success');
+                showOwnerHome();
+            } else { showToast('Invalid Owner credentials', 'error'); }
+        };
+
+        window.logoutOwner = () => {
+            window.appState.currentOwner = null;
+            showScreen('owner-login-screen');
+            showToast('Logged out', 'success');
+        };
+
+        // Owner Home - Hotels
+        window.showOwnerHome = async () => {
+            showScreen('owner-home-screen');
+            await loadOwnerHotels();
+        };
+
+        window.loadOwnerHotels = async () => {
+            const snap = await getDocs(query(collection(db, 'hotels'), orderBy('createdAt', 'desc')));
+            window.appState.hotels = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderOwnerHotels();
+        };
+
+        window.renderOwnerHotels = () => {
+            const container = document.getElementById('owner-hotel-list');
+            container.innerHTML = window.appState.hotels.map(h => `
+                <div class="bg-white rounded-xl shadow-md p-4 mb-4">
+                    <div class="flex gap-4 items-start">
+                        <img src="${h.image || 'https://via.placeholder.com/100?text=Hotel'}" class="w-20 h-20 rounded-lg object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-bold">${h.name}</h4>
+                            <p class="text-xs text-gray-500">${h.hidden ? 'Hidden' : 'Visible'} to users</p>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <button onclick="toggleHotel('${h.id}', ${!h.hidden})" class="text-xs px-3 py-1 rounded-full ${h.hidden ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${h.hidden ? 'Unhide' : 'Hide'}</button>
+                            <button onclick="openOwnerHotel('${h.id}')" class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Open</button>
+                            <button onclick="deleteHotel('${h.id}')" class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        window.addHotel = async () => {
+            const name = document.getElementById('new-hotel-name').value;
+            const image = document.getElementById('new-hotel-image').value;
+            if (!name) { showToast('Enter hotel name', 'error'); return; }
+            await addDoc(collection(db, 'hotels'), { name, image: image || '', hidden: false, createdAt: serverTimestamp() });
+            document.getElementById('new-hotel-name').value = '';
+            document.getElementById('new-hotel-image').value = '';
+            showToast('Hotel added!', 'success');
+            await loadOwnerHotels();
+        };
+
+        window.toggleHotel = async (id, hidden) => {
+            await updateDoc(doc(db, 'hotels', id), { hidden });
+            showToast(hidden ? 'Hotel hidden' : 'Hotel visible', 'success');
+            await loadOwnerHotels();
+        };
+
+        window.deleteHotel = async (id) => {
+            if (!confirm('Delete this hotel?')) return;
+            await deleteDoc(doc(db, 'hotels', id));
+            const dishesSnap = await getDocs(query(collection(db, 'dishes'), where('hotelId', '==', id)));
+            const batch = writeBatch(db);
+            dishesSnap.docs.forEach(d => batch.delete(d.ref));
+            await batch.commit();
+            showToast('Hotel deleted', 'success');
+            await loadOwnerHotels();
+        };
+
+        // Dishes
+        window.openOwnerHotel = async (hotelId) => {
+            window.appState.currentHotel = hotelId;
+            const hotel = window.appState.hotels.find(h => h.id === hotelId);
+            document.getElementById('owner-hotel-title').textContent = hotel ? hotel.name : 'Hotel Menu';
+            await loadOwnerDishes();
+            showScreen('owner-dishes-screen');
+        };
+
+        window.loadOwnerDishes = async () => {
+            const snap = await getDocs(query(collection(db, 'dishes'), where('hotelId', '==', window.appState.currentHotel), orderBy('orderIndex')));
+            window.appState.dishes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderOwnerDishes();
+        };
+
+        window.renderOwnerDishes = () => {
+            const container = document.getElementById('owner-dish-list');
+            container.innerHTML = window.appState.dishes.map((d, idx) => `
+                <div class="bg-white rounded-xl shadow-md p-4 mb-4">
+                    <div class="flex gap-4 items-center">
+                        <div class="text-gray-400 font-bold w-6">${idx + 1}</div>
+                        <img src="${d.image || 'https://via.placeholder.com/80?text=Dish'}" class="w-16 h-16 rounded-lg object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-bold">${d.name}</h4>
+                            <p class="text-xs text-gray-500">${d.category || ''}</p>
+                            <p class="text-orange-600 font-bold">${formatCurrency(d.price)}</p>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <button onclick="moveDish('${d.id}', -1)" class="text-gray-500 hover:bg-gray-100 p-1 rounded" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}><i class="fas fa-arrow-up"></i></button>
+                            <button onclick="moveDish('${d.id}', 1)" class="text-gray-500 hover:bg-gray-100 p-1 rounded" ${idx === window.appState.dishes.length - 1 ? 'disabled style="opacity:0.3"' : ''}><i class="fas fa-arrow-down"></i></button>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex gap-2">
+                        <button onclick="editDishPrompt('${d.id}')" class="flex-1 bg-blue-100 text-blue-700 py-1 rounded text-xs">Edit</button>
+                        <button onclick="toggleDish('${d.id}', ${!d.hidden})" class="flex-1 ${d.hidden ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} py-1 rounded text-xs">${d.hidden ? 'Unhide' : 'Hide'}</button>
+                        <button onclick="deleteDish('${d.id}')" class="flex-1 bg-red-100 text-red-700 py-1 rounded text-xs">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        window.addDish = async () => {
+            const name = document.getElementById('dish-name').value;
+            const category = document.getElementById('dish-category').value;
+            const image = document.getElementById('dish-image').value;
+            const price = document.getElementById('dish-price').value;
+            if (!name || !price) { showToast('Fill required fields', 'error'); return; }
+            const snap = await getDocs(query(collection(db, 'dishes'), where('hotelId', '==', window.appState.currentHotel)));
+            const orderIndex = snap.size;
+            await addDoc(collection(db, 'dishes'), {
+                hotelId: window.appState.currentHotel, name, category: category || '', image: image || '',
+                price: parseFloat(price), hidden: false, orderIndex, createdAt: serverTimestamp()
+            });
+            document.getElementById('dish-name').value = '';
+            document.getElementById('dish-category').value = '';
+            document.getElementById('dish-image').value = '';
+            document.getElementById('dish-price').value = '';
+            showToast('Dish added!', 'success');
+            await loadOwnerDishes();
+        };
+
+        window.moveDish = async (dishId, direction) => {
+            const idx = window.appState.dishes.findIndex(d => d.id === dishId);
+            const swapIdx = idx + direction;
+            if (swapIdx < 0 || swapIdx >= window.appState.dishes.length) return;
+            const batch = writeBatch(db);
+            const current = window.appState.dishes[idx];
+            const swap = window.appState.dishes[swapIdx];
+            batch.update(doc(db, 'dishes', current.id), { orderIndex: swap.orderIndex });
+            batch.update(doc(db, 'dishes', swap.id), { orderIndex: current.orderIndex });
+            await batch.commit();
+            await loadOwnerDishes();
+        };
+
+        window.toggleDish = async (id, hidden) => {
+            await updateDoc(doc(db, 'dishes', id), { hidden });
+            showToast(hidden ? 'Dish hidden' : 'Dish visible', 'success');
+            await loadOwnerDishes();
+        };
+
+        window.deleteDish = async (id) => {
+            if (!confirm('Delete this dish?')) return;
+            await deleteDoc(doc(db, 'dishes', id));
+            showToast('Dish deleted', 'success');
+            await loadOwnerDishes();
+        };
+
+        window.editDishPrompt = async (id) => {
+            const dish = window.appState.dishes.find(d => d.id === id);
+            if (!dish) return;
+            const newName = prompt('Dish Name:', dish.name);
+            if (newName === null) return;
+            const newCategory = prompt('Category:', dish.category || '');
+            const newImage = prompt('Image URL:', dish.image || '');
+            const newPrice = prompt('Price:', dish.price);
+            await updateDoc(doc(db, 'dishes', id), {
+                name: newName || dish.name,
+                category: newCategory !== null ? newCategory : dish.category,
+                image: newImage !== null ? newImage : dish.image,
+                price: newPrice !== null ? parseFloat(newPrice) : dish.price
+            });
+            showToast('Dish updated!', 'success');
+            await loadOwnerDishes();
+        };
+
+        // Passwords
+        window.showOwnerPasswords = async () => {
+            showScreen('owner-passwords-screen');
+            await loadPasswordAccounts();
+        };
+
+        window.loadPasswordAccounts = async () => {
+            const hostSnap = await getDocs(collection(db, 'hostAccounts'));
+            const delSnap = await getDocs(collection(db, 'deliveryAccounts'));
+
+            document.getElementById('host-accounts-list').innerHTML = hostSnap.docs.map(d => {
+                const data = d.data();
+                return `
+                <div class="bg-white rounded-xl shadow-md p-4 mb-3 flex justify-between items-center">
+                    <div>
+                        <p class="font-bold">${data.id}</p>
+                        <p class="text-xs text-gray-500">${data.name || ''}</p>
+                        ${data.banned ? '<span class="text-xs text-red-500 font-bold">BANNED</span>' : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editAccount('host', '${d.id}')" class="text-blue-500 p-2"><i class="fas fa-edit"></i></button>
+                        <button onclick="toggleBan('host', '${d.id}', ${!data.banned})" class="${data.banned ? 'text-green-500' : 'text-yellow-500'} p-2"><i class="fas fa-ban"></i></button>
+                        <button onclick="deleteAccount('host', '${d.id}')" class="text-red-500 p-2"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }).join('') || '<p class="text-gray-500 text-center py-4">No host accounts</p>';
+
+            document.getElementById('delivery-accounts-list').innerHTML = delSnap.docs.map(d => {
+                const data = d.data();
+                return `
+                <div class="bg-white rounded-xl shadow-md p-4 mb-3 flex justify-between items-center">
+                    <div>
+                        <p class="font-bold">${data.id}</p>
+                        <p class="text-xs text-gray-500">${data.name || ''}</p>
+                        ${data.banned ? '<span class="text-xs text-red-500 font-bold">BANNED</span>' : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editAccount('delivery', '${d.id}')" class="text-blue-500 p-2"><i class="fas fa-edit"></i></button>
+                        <button onclick="toggleBan('delivery', '${d.id}', ${!data.banned})" class="${data.banned ? 'text-green-500' : 'text-yellow-500'} p-2"><i class="fas fa-ban"></i></button>
+                        <button onclick="deleteAccount('delivery', '${d.id}')" class="text-red-500 p-2"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }).join('') || '<p class="text-gray-500 text-center py-4">No delivery accounts</p>';
+        };
+
+        window.createHostAccount = async () => {
+            const id = document.getElementById('new-host-id').value;
+            const password = document.getElementById('new-host-password').value;
+            const name = document.getElementById('new-host-name').value;
+            if (!id || !password) { showToast('Fill all fields', 'error'); return; }
+            await addDoc(collection(db, 'hostAccounts'), { id, password, name: name || '', banned: false, createdAt: serverTimestamp() });
+            document.getElementById('new-host-id').value = '';
+            document.getElementById('new-host-password').value = '';
+            document.getElementById('new-host-name').value = '';
+            showToast('Host account created!', 'success');
+            await loadPasswordAccounts();
+        };
+
+        window.createDeliveryAccount = async () => {
+            const id = document.getElementById('new-delivery-id').value;
+            const password = document.getElementById('new-delivery-password').value;
+            const name = document.getElementById('new-delivery-name').value;
+            if (!id || !password) { showToast('Fill all fields', 'error'); return; }
+            await addDoc(collection(db, 'deliveryAccounts'), { id, password, name: name || '', banned: false, createdAt: serverTimestamp() });
+            document.getElementById('new-delivery-id').value = '';
+            document.getElementById('new-delivery-password').value = '';
+            document.getElementById('new-delivery-name').value = '';
+            showToast('Delivery account created!', 'success');
+            await loadPasswordAccounts();
+        };
+
+        window.editAccount = async (type, docId) => {
+            const newId = prompt('New ID:');
+            if (newId === null) return;
+            const newPassword = prompt('New Password:');
+            const newName = prompt('New Name:');
+            const updates = {};
+            if (newId !== null) updates.id = newId;
+            if (newPassword !== null) updates.password = newPassword;
+            if (newName !== null) updates.name = newName;
+            await updateDoc(doc(db, type === 'host' ? 'hostAccounts' : 'deliveryAccounts', docId), updates);
+            showToast('Account updated!', 'success');
+            await loadPasswordAccounts();
+        };
+
+        window.toggleBan = async (type, docId, banned) => {
+            await updateDoc(doc(db, type === 'host' ? 'hostAccounts' : 'deliveryAccounts', docId), { banned });
+            showToast(banned ? 'Account banned' : 'Account unbanned', 'success');
+            await loadPasswordAccounts();
+        };
+
+        window.deleteAccount = async (type, docId) => {
+            if (!confirm('Delete this account?')) return;
+            await deleteDoc(doc(db, type === 'host' ? 'hostAccounts' : 'deliveryAccounts', docId));
+            showToast('Account deleted', 'success');
+            await loadPasswordAccounts();
+        };
+
+        window.changeOwnerPassword = () => {
+            const current = document.getElementById('owner-current-pass').value;
+            const newPass = document.getElementById('owner-new-pass').value;
+            if (current !== 'jain6799') { showToast('Current password incorrect', 'error'); return; }
+            if (!newPass) { showToast('Enter new password', 'error'); return; }
+            showToast('Password changed successfully!', 'success');
+        };
+
+        // Profile
+        window.showOwnerProfile = () => {
+            showScreen('owner-profile-screen');
+            renderOwnerProfile();
+        };
+
+        window.renderOwnerProfile = async () => {
+            const docSnap = await getDoc(doc(db, 'ownerProfile', 'main'));
+            const data = docSnap.data() || {};
+            document.getElementById('owner-profile-form').innerHTML = `
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <img src="${data.image || 'https://via.placeholder.com/150?text=Owner'}" class="w-32 h-32 rounded-full mx-auto object-cover mb-4 shadow-lg">
+                        <input type="text" id="owner-profile-image" value="${data.image || ''}" placeholder="Image URL" class="w-full border p-3 rounded-lg text-sm">
+                    </div>
+                    <input type="text" id="owner-profile-name" value="${data.name || ''}" placeholder="Name" class="w-full border p-3 rounded-lg">
+                    <textarea id="owner-profile-details" placeholder="Details" class="w-full border p-3 rounded-lg h-24">${data.details || ''}</textarea>
+                    <input type="text" id="owner-whatsapp" value="${data.whatsapp || ''}" placeholder="WhatsApp Link" class="w-full border p-3 rounded-lg">
+                    <input type="text" id="owner-instagram" value="${data.instagram || ''}" placeholder="Instagram Link" class="w-full border p-3 rounded-lg">
+                    <input type="text" id="owner-telegram" value="${data.telegram || ''}" placeholder="Telegram Link" class="w-full border p-3 rounded-lg">
+                    <input type="text" id="owner-twitter" value="${data.twitter || ''}" placeholder="Twitter Link" class="w-full border p-3 rounded-lg">
+                    <button onclick="saveOwnerProfile()" class="w-full bg-purple-600 text-white py-3 rounded-full font-bold shadow-lg">Save Profile</button>
+                    <div class="flex justify-center gap-4 mt-6">
+                        ${data.whatsapp ? `<a href="${data.whatsapp}" target="_blank" class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white text-xl shadow-md hover:scale-110 transition"><i class="fab fa-whatsapp"></i></a>` : ''}
+                        ${data.instagram ? `<a href="${data.instagram}" target="_blank" class="w-12 h-12 bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xl shadow-md hover:scale-110 transition"><i class="fab fa-instagram"></i></a>` : ''}
+                        ${data.telegram ? `<a href="${data.telegram}" target="_blank" class="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center text-white text-xl shadow-md hover:scale-110 transition"><i class="fab fa-telegram"></i></a>` : ''}
+                        ${data.twitter ? `<a href="${data.twitter}" target="_blank" class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl shadow-md hover:scale-110 transition"><i class="fab fa-twitter"></i></a>` : ''}
+                    </div>
+                </div>
+            `;
+        };
+
+        window.saveOwnerProfile = async () => {
+            const data = {
+                image: document.getElementById('owner-profile-image').value,
+                name: document.getElementById('owner-profile-name').value,
+                details: document.getElementById('owner-profile-details').value,
+                whatsapp: document.getElementById('owner-whatsapp').value,
+                instagram: document.getElementById('owner-instagram').value,
+                telegram: document.getElementById('owner-telegram').value,
+                twitter: document.getElementById('owner-twitter').value
+            };
+            await setDoc(doc(db, 'ownerProfile', 'main'), data);
+            showToast('Profile saved!', 'success');
+            renderOwnerProfile();
+        };
+
+        Object.assign(window, {
+            showScreen, loginOwner, logoutOwner, showOwnerHome, showOwnerPasswords, showOwnerProfile,
+            loadOwnerHotels, renderOwnerHotels, addHotel, toggleHotel, deleteHotel, openOwnerHotel,
+            loadOwnerDishes, renderOwnerDishes, addDish, moveDish, toggleDish, deleteDish, editDishPrompt,
+            loadPasswordAccounts, createHostAccount, createDeliveryAccount, editAccount, toggleBan, deleteAccount,
+            changeOwnerPassword, saveOwnerProfile, renderOwnerProfile
+        });
+    </script>
+    <style>
+        * { font-family: 'Poppins', sans-serif; }
+        body { background-color: #f3f4f6; }
+        .screen { min-height: 100vh; padding-bottom: 80px; }
+        .hidden { display: none !important; }
+        .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
+        .bottom-bar button { display: flex; flex-direction: column; align-items: center; font-size: 12px; color: #6b7280; background: none; border: none; cursor: pointer; }
+        .bottom-bar button.active { color: #9333ea; }
+        .bottom-bar i { font-size: 20px; margin-bottom: 2px; }
+        input, textarea { outline: none; }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body>
+
+<!-- OWNER LOGIN -->
+<div id="owner-login-screen" class="screen flex flex-col p-6 bg-gray-50">
+    <div class="flex items-center mb-8">
+        <a href="user_panel.html" class="text-gray-600 mr-4"><i class="fas fa-arrow-left text-xl"></i></a>
+        <h2 class="text-2xl font-bold text-purple-600">Owner Login</h2>
+    </div>
+    <div class="bg-white rounded-2xl shadow-lg p-6 space-y-4">
+        <div>
+            <label class="text-sm text-gray-600 font-medium">Email ID</label>
+            <input type="email" id="owner-email" class="w-full border border-gray-300 p-3 rounded-lg mt-1 focus:border-purple-500" placeholder="Enter Email">
+        </div>
+        <div>
+            <label class="text-sm text-gray-600 font-medium">Password</label>
+            <input type="password" id="owner-password" class="w-full border border-gray-300 p-3 rounded-lg mt-1 focus:border-purple-500" placeholder="Enter Password">
+        </div>
+        <button onclick="loginOwner()" class="w-full bg-purple-600 text-white py-3 rounded-full font-bold shadow-lg">Login</button>
+        <a href="user_panel.html" class="block text-center text-gray-500 text-sm mt-4">Back to User Panel</a>
+    </div>
+</div>
+
+<!-- OWNER HOME -->
+<div id="owner-home-screen" class="screen hidden bg-gray-50">
+    <div class="bg-purple-600 text-white p-4 pt-6 sticky top-0 z-50 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold">Owner Dashboard</h1>
+        <button onclick="logoutOwner()" class="text-white text-sm"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+    <div class="p-4 pb-24">
+        <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+            <h3 class="font-bold text-gray-800 mb-3">Add New Hotel</h3>
+            <input type="text" id="new-hotel-name" class="w-full border border-gray-300 p-3 rounded-lg mb-2" placeholder="Hotel Name">
+            <input type="text" id="new-hotel-image" class="w-full border border-gray-300 p-3 rounded-lg mb-3" placeholder="Image URL">
+            <button onclick="addHotel()" class="w-full bg-purple-600 text-white py-2 rounded-lg font-bold">Add Hotel</button>
+        </div>
+        <h3 class="font-bold text-gray-800 mb-3">Hotels</h3>
+        <div id="owner-hotel-list"></div>
+    </div>
+    <div class="bottom-bar">
+        <button onclick="showOwnerHome()" class="active"><i class="fas fa-home"></i>Home</button>
+        <button onclick="showOwnerPasswords()"><i class="fas fa-key"></i>Passwords</button>
+        <button onclick="showOwnerProfile()"><i class="fas fa-user"></i>Profile</button>
+    </div>
+</div>
+
+<!-- OWNER DISHES -->
+<div id="owner-dishes-screen" class="screen hidden bg-gray-50">
+    <div class="bg-purple-600 text-white p-4 pt-6 sticky top-0 z-50 shadow-md flex items-center gap-4">
+        <button onclick="showOwnerHome()" class="text-white"><i class="fas fa-arrow-left text-xl"></i></button>
+        <h1 id="owner-hotel-title" class="text-xl font-bold">Hotel Menu</h1>
+    </div>
+    <div class="p-4 pb-24">
+        <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+            <h3 class="font-bold text-gray-800 mb-3">Add Dish</h3>
+            <input type="text" id="dish-name" class="w-full border border-gray-300 p-3 rounded-lg mb-2" placeholder="Dish Name (e.g. Pizza)">
+            <input type="text" id="dish-category" class="w-full border border-gray-300 p-3 rounded-lg mb-2" placeholder="Category (e.g. Cheese Pizza)">
+            <input type="text" id="dish-image" class="w-full border border-gray-300 p-3 rounded-lg mb-2" placeholder="Image URL">
+            <input type="number" id="dish-price" class="w-full border border-gray-300 p-3 rounded-lg mb-3" placeholder="Price">
+            <button onclick="addDish()" class="w-full bg-purple-600 text-white py-2 rounded-lg font-bold">Add Dish</button>
+        </div>
+        <h3 class="font-bold text-gray-800 mb-3">Dishes</h3>
+        <div id="owner-dish-list"></div>
+    </div>
+</div>
+
+<!-- OWNER PASSWORDS -->
+<div id="owner-passwords-screen" class="screen hidden bg-gray-50">
+    <div class="bg-purple-600 text-white p-4 pt-6 sticky top-0 z-50 shadow-md flex items-center gap-4">
+        <button onclick="showOwnerHome()" class="text-white"><i class="fas fa-arrow-left text-xl"></i></button>
+        <h1 class="text-xl font-bold">Passwords</h1>
+    </div>
+    <div class="p-4 pb-24 space-y-6">
+        <div class="bg-white rounded-xl shadow-md p-4">
+            <h3 class="font-bold text-gray-800 mb-3">Owner Password</h3>
+            <p class="text-xs text-gray-500 mb-2">Current: jain6799</p>
+            <input type="password" id="owner-current-pass" class="w-full border border-gray-300 p-3 rounded-lg mb-2" placeholder="Current Password">
+            <input type="password" id="owner-new-pass" class="w-full border border-gray-300 p-3 rounded-lg mb-3" placeholder="New Password">
+            <button onclick="changeOwnerPassword()" class="w-full bg-purple-600 text-white py-2 rounded-lg font-bold">Change Password</button>
+        </div>
+        <div class="bg-white rounded-xl shadow-md p-4">
+            <h3 class="font-bold text-gray-800 mb-3">Host Accounts</h3>
+            <div class="space-y-2 mb-4">
+                <input type="text" id="new-host-id" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="Host ID">
+                <input type="password" id="new-host-password" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="Password">
+                <input type="text" id="new-host-name" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="Name">
+                <button onclick="createHostAccount()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Create Host</button>
+            </div>
+            <div id="host-accounts-list"></div>
+        </div>
+        <div class="bg-white rounded-xl shadow-md p-4">
+            <h3 class="font-bold text-gray-800 mb-3">Delivery Accounts</h3>
+            <div class="space-y-2 mb-4">
+                <input type="text" id="new-delivery-id" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="Delivery ID">
+                <input type="password" id="new-delivery-password" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="Password">
+                <input type="text" id="new-delivery-name" class="w-full border border-gray-300 p-3 rounded-lg" placeholder="Name">
+                <button onclick="createDeliveryAccount()" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold">Create Delivery</button>
+            </div>
+            <div id="delivery-accounts-list"></div>
+        </div>
+    </div>
+    <div class="bottom-bar">
+        <button onclick="showOwnerHome()"><i class="fas fa-home"></i>Home</button>
+        <button onclick="showOwnerPasswords()" class="active"><i class="fas fa-key"></i>Passwords</button>
+        <button onclick="showOwnerProfile()"><i class="fas fa-user"></i>Profile</button>
+    </div>
+</div>
+
+<!-- OWNER PROFILE -->
+<div id="owner-profile-screen" class="screen hidden bg-gray-50">
+    <div class="bg-purple-600 text-white p-4 pt-6 sticky top-0 z-50 shadow-md flex items-center gap-4">
+        <button onclick="showOwnerHome()" class="text-white"><i class="fas fa-arrow-left text-xl"></i></button>
+        <h1 class="text-xl font-bold">Owner Profile</h1>
+    </div>
+    <div class="p-4 pb-24">
+        <div id="owner-profile-form" class="bg-white rounded-xl shadow-md p-6"></div>
+    </div>
+    <div class="bottom-bar">
+        <button onclick="showOwnerHome()"><i class="fas fa-home"></i>Home</button>
+        <button onclick="showOwnerPasswords()"><i class="fas fa-key"></i>Passwords</button>
+        <button onclick="showOwnerProfile()" class="active"><i class="fas fa-user"></i>Profile</button>
+    </div>
+</div>
+
+<script>document.addEventListener('DOMContentLoaded', () => showScreen('owner-login-screen'));</script>
+</body>
+</html>
