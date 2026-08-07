@@ -1,0 +1,28 @@
+{
+  "rules": {
+    "hotels": {
+      ".read": true,
+      ".write": true
+    },
+    "dishes": {
+      ".read": true,
+      ".write": true
+    },
+    "orders": {
+      ".read": true,
+      ".write": true
+    },
+    "users": {
+      ".read": true,
+      ".write": true
+    },
+    "credentials": {
+      ".read": true,
+      ".write": true
+    },
+    "settings": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
