@@ -1,797 +1,728 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owner Panel - Food Delivery</title>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner Panel - Food Delivery App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f0f2f5; padding-bottom: 75px; color: #333; }
+    header { background: #1a237e; color: #fff; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 1000; font-size: 19px; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+    .container { padding: 12px; max-width: 750px; margin: auto; }
+    .page { display: none; }
+    .page.active { display: block; }
     
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+    /* Clean Modern Cards */
+    .card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px; color: #444; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #cccccc; border-radius: 6px; font-size: 14px; outline: none; }
+    .form-group input:focus, .form-group select:focus { border-color: #1a237e; }
+    
+    /* Buttons */
+    .btn { background: #1a237e; color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; }
+    .btn:hover { opacity: 0.9; }
+    .btn-danger { background: #d32f2f; }
+    .btn-warning { background: #f57c00; }
+    .btn-success { background: #2e7d32; }
+    .btn-secondary { background: #616161; }
+    .btn-sm { padding: 5px 9px; font-size: 12px; border-radius: 4px; }
+    
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #e0e0e0; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+    .nav-item { text-align: center; color: #666; font-size: 12px; cursor: pointer; }
+    .nav-item.active { color: #1a237e; font-weight: bold; }
+    .nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+    .flex-gap { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .hidden { display: none !important; }
 
-        body {
-            background-color: #f4f6f9;
-            color: #333;
-            padding-bottom: 75px;
-        }
+    /* Hierarchical Category & Sub Food UI */
+    .cat-wrapper { background: #ffffff; border-radius: 10px; border: 1px solid #e0e0e0; margin-bottom: 20px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+    .cat-header { background: linear-gradient(135deg, #ff6f00, #ff8f00); color: white; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .cat-header-title { font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+    .cat-header-title img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1.5px solid #fff; }
+    .sub-food-list { padding: 12px; background: #fafafa; }
+    
+    .dish-item-row { display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; gap: 10px; }
+    .dish-item-row img { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+    .dish-info { flex-grow: 1; }
+    .dish-name { font-weight: bold; font-size: 14px; color: #111; }
+    .dish-meta { font-size: 12px; color: #666; margin-top: 2px; }
+    .dish-price { color: #2e7d32; font-weight: bold; font-size: 13px; margin-top: 2px; }
 
-        /* Top Header */
-        .top-header {
-            background-color: #2c3e50;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    /* Edit Modal Overlay */
+    .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 15px; }
+    .modal-card { background: #fff; border-radius: 10px; width: 100%; max-width: 500px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #1a237e; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+  </style>
 
-        /* View Sections */
-        .view-section {
-            display: none;
-            padding: 15px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .view-section.active {
-            display: block;
-        }
-
-        /* Card System */
-        .card {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
-        }
-
-        /* Forms */
-        .form-group {
-            margin-bottom: 12px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            color: #555;
-            margin-bottom: 4px;
-            font-weight: bold;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            outline: none;
-            font-size: 14px;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 8px 14px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 13px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .btn-primary { background: #2980b9; color: white; }
-        .btn-success { background: #27ae60; color: white; }
-        .btn-warning { background: #f39c12; color: white; }
-        .btn-danger { background: #e74c3c; color: white; }
-        .btn-dark { background: #34495e; color: white; }
-
-        .btn-sm {
-            padding: 4px 8px;
-            font-size: 12px;
-        }
-
-        /* Item Rows */
-        .item-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: #fff;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .item-img {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 6px;
-        }
-
-        .item-details {
-            flex: 1;
-        }
-
-        .badge {
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        .badge-visible { background: #d4edda; color: #155724; }
-        .badge-hidden { background: #f8d7da; color: #721c24; }
-        .badge-banned { background: #333; color: #fff; }
-
-        /* Social Media Buttons */
-        .social-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .social-btn {
-            padding: 12px;
-            border-radius: 8px;
-            color: white;
-            text-decoration: none;
-            text-align: center;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .bg-whatsapp { background: #25D366; }
-        .bg-instagram { background: #E1306C; }
-        .bg-telegram { background: #0088cc; }
-        .bg-twitter { background: #1DA1F2; }
-
-        /* Bottom Nav */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background-color: #2c3e50;
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            z-index: 1000;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: #bdc3c7;
-            font-size: 12px;
-            cursor: pointer;
-            text-decoration: none;
-            width: 33.33%;
-        }
-
-        .nav-item.active {
-            color: #f1c40f;
-            font-weight: bold;
-        }
-
-        .nav-item i {
-            font-size: 20px;
-            margin-bottom: 2px;
-        }
-
-        /* Login Overlay */
-        #login-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #1a252f;
-            z-index: 2000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .login-box {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 380px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-    </style>
-
-    <!-- Firebase Compat SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
-    <!-- OWNER LOGIN OVERLAY -->
-    <div id="login-overlay">
-        <div class="login-box">
-            <h2 style="text-align: center; margin-bottom: 20px; color: #2c3e50;"><i class="fa-solid fa-user-gear"></i> Owner Login</h2>
-            <div class="form-group">
-                <label>Owner Email ID</label>
-                <input type="email" id="login-email" class="form-control" value="naitikjain240725@gmail.com">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="login-pass" class="form-control" value="jain6799">
-            </div>
-            <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;" onclick="checkOwnerLogin()">LOGIN TO OWNER PANEL</button>
-        </div>
+  <header>Owner Panel Control</header>
+
+  <div class="container">
+
+    <!-- LOGIN PANEL -->
+    <div id="login-section" class="card">
+      <h2 style="color:#1a237e; margin-bottom: 15px;">Owner Login</h2>
+      <div class="form-group"><label>ID (Email)</label><input type="text" id="owner-id" placeholder="naitikjain240725@gmail.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="owner-pass" placeholder="jain6799"></div>
+      <button class="btn" style="width:100%; margin-top: 5px;" onclick="ownerLogin()">Login</button>
     </div>
 
-    <!-- TOP HEADER -->
-    <div class="top-header">
-        <h3 id="panel-title"><i class="fa-solid fa-crown"></i> Owner Panel</h3>
-        <button id="back-to-hotels-btn" class="btn btn-warning btn-sm" style="display: none;" onclick="showHotelManagement()"><i class="fa-solid fa-arrow-left"></i> Hotels List</button>
-    </div>
+    <!-- MAIN OWNER DASHBOARD -->
+    <div id="dashboard-section" class="hidden">
 
-    <!-- TAB 1: HOMEPAGE (HOTELS & DISHES MANAGEMENT) -->
-    <div id="view-homepage" class="view-section active">
+      <!-- PAGE 1: HOMEPAGE (HOTELS & DISHES EDIT) -->
+      <div id="page-home" class="page active">
         
-        <!-- SECTION A: HOTEL MANAGEMENT -->
-        <div id="hotel-mgmt-container">
-            <div class="card">
-                <div class="card-header">
-                    <h4><i class="fa-solid fa-hotel"></i> Add New Hotel</h4>
-                </div>
-                <div class="form-group">
-                    <label>Hotel Name</label>
-                    <input type="text" id="new-hotel-name" class="form-control" placeholder="Enter Hotel Name">
-                </div>
-                <div class="form-group">
-                    <label>Hotel Image URL (Only Image Link)</label>
-                    <input type="url" id="new-hotel-image" class="form-control" placeholder="https://example.com/image.jpg">
-                </div>
-                <button class="btn btn-success" onclick="addNewHotel()"><i class="fa-solid fa-plus"></i> Add Hotel</button>
-            </div>
+        <!-- Manage Hotels View -->
+        <div id="hotel-mgr-view">
+          <div class="card" style="border-top:4px solid #1a237e;">
+            <h3 style="margin-bottom: 12px; color:#1a237e;">➕ नई होटल जोड़ें (Add Hotel)</h3>
+            <div class="form-group"><label>Hotel Name</label><input type="text" id="new-hotel-name" placeholder="होटल का नाम"></div>
+            <div class="form-group"><label>Image URL</label><input type="text" id="new-hotel-img" placeholder="केवल Image URL दर्ज करें"></div>
+            <button class="btn btn-success" onclick="addHotel()">Hotel Add करें</button>
+          </div>
 
-            <h4>Hotels List (User Panel Connected)</h4>
-            <div id="hotels-list-container" style="margin-top: 10px;">
-                <!-- Hotels loaded dynamically from Firestore -->
-            </div>
+          <h3 style="margin: 15px 0 10px 0; color:#333;">🏨 आपकी होटल सूची (Manage Hotels)</h3>
+          <div id="owner-hotels-list"></div>
         </div>
 
-        <!-- SECTION B: DISHES MANAGEMENT (INSIDE A SELECTED HOTEL) -->
-        <div id="dish-mgmt-container" style="display: none;">
-            <div class="card">
-                <div class="card-header">
-                    <h4 id="selected-hotel-title"><i class="fa-solid fa-utensils"></i> Add Dish</h4>
-                </div>
-                <div class="form-group">
-                    <label>Dish Name (e.g., Pizza)</label>
-                    <input type="text" id="dish-main-name" class="form-control" placeholder="e.g. Pizza">
-                </div>
-                <div class="form-group">
-                    <label>Dish Category / Variety (e.g., Cheese Pizza, Butter Pizza)</label>
-                    <input type="text" id="dish-category" class="form-control" placeholder="e.g. Cheese Pizza">
-                </div>
-                <div class="form-group">
-                    <label>Price (Amount in ₹)</label>
-                    <input type="number" id="dish-price" class="form-control" placeholder="150">
-                </div>
-                <div class="form-group">
-                    <label>Quantity Option / Portion</label>
-                    <input type="text" id="dish-qty" class="form-control" placeholder="1 Full / 2 Pcs">
-                </div>
-                <div class="form-group">
-                    <label>Dish Image URL (Only Image Link)</label>
-                    <input type="url" id="dish-image" class="form-control" placeholder="https://example.com/dish.jpg">
-                </div>
-                <button class="btn btn-success" onclick="addNewDish()"><i class="fa-solid fa-plus"></i> Add Dish</button>
-            </div>
+        <!-- Manage Dishes & Categories View inside Hotel -->
+        <div id="dish-mgr-view" class="hidden">
+          <button class="btn btn-secondary" style="margin-bottom: 15px;" onclick="backToHotelMgr()">← वापस होटल सूची</button>
+          <h2 id="current-hotel-title" style="color:#1a237e; margin-bottom: 15px;"></h2>
 
-            <h4>Dishes List (Re-order & Hide Options)</h4>
-            <div id="dishes-list-container" style="margin-top: 10px;">
-                <!-- Dishes loaded dynamically from Firestore -->
+          <!-- Add Main Food Category -->
+          <div class="card" style="border-top:4px solid #ff6f00;">
+            <h4 style="color:#e65100; margin-bottom: 10px;">➕ 1. Main Food Title/Category जोड़ें (Ex: Pizza, Mutton, Dinner)</h4>
+            <div class="form-group"><label>Category Title Name *</label><input type="text" id="cat-name" placeholder="टाइटल का नाम (Ex: Mutton / Pizza)"></div>
+            <div class="form-group"><label>Banner Image URL (Optional)</label><input type="text" id="cat-img" placeholder="Header Image URL"></div>
+            <button class="btn btn-warning" type="button" onclick="addCategory()">Category Title Add करें</button>
+          </div>
+
+          <!-- Add Sub Food Dish -->
+          <div class="card" style="border-top:4px solid #2e7d32;">
+            <h4 style="color:#1b5e20; margin-bottom: 10px;">➕ 2. Sub Food (Dish) जोड़ें</h4>
+            <div class="form-group">
+              <label>Select Main Food Category *</label>
+              <select id="dish-cat-select"></select>
             </div>
+            <div class="form-group"><label>Dish Name (Ex: Cheese Pizza / Mutton Chops) *</label><input type="text" id="dish-name" placeholder="डिश का नाम"></div>
+            <div class="form-group"><label>Variety / Description</label><input type="text" id="dish-category" placeholder="वैराइटी / रेसिपी डिटेल्स"></div>
+            <div class="form-group"><label>Image URL</label><input type="text" id="dish-img" placeholder="केवल URL डालें"></div>
+            <div class="form-group"><label>Price (Amount) *</label><input type="number" id="dish-price" placeholder="राशि (₹)"></div>
+            <div class="form-group"><label>Quantity Details</label><input type="text" id="dish-qty" placeholder="जैसे: 1 Plate / 1 Pc"></div>
+            <button class="btn btn-success" type="button" onclick="addDish()">Dish Add करें</button>
+          </div>
+
+          <!-- GROUPED HIERARCHICAL MENU DISPLAY -->
+          <h3 style="margin: 20px 0 10px 0; color:#333;">🍽️ होटल का पूरा मेन्यू कंट्रोल (Hierarchical Menu)</h3>
+          <p style="font-size: 12px; color: #666; margin-bottom: 15px;">
+            नोट: Main Category को ▲/▼ करने से उसका पूरा बंच खिसकेगा। Sub Food को ▲/▼ करने से वह अपनी ही कैटेगिरी के अंदर ऊपर-नीचे होगा।
+          </p>
+          <div id="hierarchical-menu-container"></div>
         </div>
 
-    </div>
+      </div>
 
-    <!-- TAB 2: PASSWORDS MANAGEMENT -->
-    <div id="view-passwords" class="view-section">
+      <!-- PAGE 2: PASSWORDS TAB -->
+      <div id="page-passwords" class="page">
+        <h3 style="margin-bottom:15px; color:#1a237e;">🔑 क्रेडेंशियल्स प्रबंधन (Credentials)</h3>
         
-        <!-- 1. HOST PANEL PASSWORDS -->
-        <div class="card">
-            <div class="card-header">
-                <h4><i class="fa-solid fa-user-tie"></i> Host Credentials</h4>
-            </div>
-            <div class="form-group">
-                <label>Host ID / Email</label>
-                <input type="text" id="host-id-input" class="form-control" placeholder="host@hotel.com">
-            </div>
-            <div class="form-group">
-                <label>Host Password</label>
-                <input type="text" id="host-pass-input" class="form-control" placeholder="Password">
-            </div>
-            <button class="btn btn-primary" onclick="saveHostAccount()"><i class="fa-solid fa-user-plus"></i> Save Host Credentials</button>
-            
-            <div id="host-accounts-list" style="margin-top: 15px;"></div>
+        <div class="card" style="border-top: 4px solid #1a237e;">
+          <h4 style="margin-bottom:12px;">Host & Delivery Boy ID & Passwords बनाएं</h4>
+          <div class="form-group">
+            <label>Role Select करें</label>
+            <select id="user-role">
+              <option value="Host">Host</option>
+              <option value="Delivery Boy">Delivery Boy</option>
+            </select>
+          </div>
+          <div class="form-group"><label>ID (Email)</label><input type="text" id="cred-email" placeholder="ID/Email डालें"></div>
+          <div class="form-group"><label>Password</label><input type="text" id="cred-pass" placeholder="Password डालें"></div>
+          <button class="btn" onclick="saveCredential()">Create Credential</button>
         </div>
 
-        <!-- 2. DELIVERY BOY PASSWORDS -->
-        <div class="card">
-            <div class="card-header">
-                <h4><i class="fa-solid fa-motorcycle"></i> Delivery Boy Credentials</h4>
-            </div>
-            <div class="form-group">
-                <label>Delivery Boy ID / Username</label>
-                <input type="text" id="delivery-id-input" class="form-control" placeholder="delivery1">
-            </div>
-            <div class="form-group">
-                <label>Delivery Boy Password</label>
-                <input type="text" id="delivery-pass-input" class="form-control" placeholder="Password">
-            </div>
-            <button class="btn btn-primary" onclick="saveDeliveryAccount()"><i class="fa-solid fa-user-plus"></i> Save Delivery Credentials</button>
+        <h4 style="margin: 15px 0 10px 0;">सहेजे गए Host / Delivery Boy Credentials (Edit / Ban / Delete)</h4>
+        <div id="credentials-list"></div>
 
-            <div id="delivery-accounts-list" style="margin-top: 15px;"></div>
+        <div class="card" style="border-top: 4px solid #f57c00; margin-top:20px;">
+          <h4 style="margin-bottom:10px;">Owner ID and Password Change</h4>
+          <p style="font-size: 13px; color: green; margin-bottom: 12px; background: #e8f5e9; padding: 8px; border-radius: 4px;">
+            <strong>हाल ही में सक्रिय Credentials:</strong><br>
+            ID: <span id="cur-owner-id">naitikjain240725@gmail.com</span><br>
+            Pass: <span id="cur-owner-pass">jain6799</span>
+          </p>
+          <div class="form-group"><label>नया पासवर्ड दर्ज करें</label><input type="password" id="new-owner-pass" placeholder="नया पासवर्ड"></div>
+          <button class="btn btn-warning" onclick="changeOwnerPassword()">Password अपडेट करें</button>
+        </div>
+      </div>
+
+      <!-- PAGE 3: PROFILE TAB -->
+      <div id="page-profile" class="page">
+        <h3 style="margin-bottom:15px; color:#1a237e;">👤 Host / Owner Profile Details</h3>
+        <div class="card">
+          <div class="form-group"><label>Host Profile Image URL</label><input type="text" id="host-img-url" placeholder="Image URL"></div>
+          <div class="form-group"><label>Host Details</label><textarea id="host-details" rows="3" placeholder="विवरण..."></textarea></div>
+          <h4 style="margin: 15px 0 10px 0;">Social Media Links</h4>
+          <div class="form-group"><label>WhatsApp Link</label><input type="text" id="link-wa"></div>
+          <div class="form-group"><label>Instagram Link</label><input type="text" id="link-insta"></div>
+          <div class="form-group"><label>Telegram Link</label><input type="text" id="link-tg"></div>
+          <div class="form-group"><label>Twitter Link</label><input type="text" id="link-tw"></div>
+          <button class="btn btn-success" onclick="saveProfileDetails()">Profile सहेजें</button>
         </div>
 
-        <!-- 3. OWNER PANEL ID & PASSWORD -->
         <div class="card">
-            <div class="card-header">
-                <h4><i class="fa-solid fa-key"></i> Owner Credentials</h4>
-            </div>
-            <div class="form-group">
-                <label>Owner Email ID (Active)</label>
-                <input type="text" id="owner-active-id" class="form-control" readonly style="background: #eef;">
-            </div>
-            <div class="form-group">
-                <label>New Owner Password</label>
-                <input type="password" id="owner-new-pass" class="form-control" placeholder="Enter New Password">
-            </div>
-            <button class="btn btn-warning" onclick="changeOwnerPassword()"><i class="fa-solid fa-pen-to-square"></i> Change Owner Password</button>
-            <div style="margin-top: 10px; font-size: 13px; color: #555;">
-                Current Password: <strong id="owner-current-pass-display">jain6799</strong>
-            </div>
+          <h4 style="margin-bottom:10px;">Social Media Links Test</h4>
+          <div class="flex-gap">
+            <button class="btn" style="background:#25D366" onclick="openLink('wa')">WhatsApp</button>
+            <button class="btn" style="background:#E1306C" onclick="openLink('insta')">Instagram</button>
+            <button class="btn" style="background:#0088cc" onclick="openLink('tg')">Telegram</button>
+            <button class="btn" style="background:#1DA1F2" onclick="openLink('tw')">Twitter</button>
+          </div>
         </div>
+      </div>
+
+      <!-- BOTTOM NAVIGATION BAR -->
+      <div class="bottom-nav">
+        <div class="nav-item active" id="nav-home" onclick="showPage('home')"><span class="nav-icon">🏠</span>Homepage</div>
+        <div class="nav-item" id="nav-passwords" onclick="showPage('passwords')"><span class="nav-icon">🔑</span>Passwords</div>
+        <div class="nav-item" id="nav-profile" onclick="showPage('profile')"><span class="nav-icon">👤</span>Profile</div>
+      </div>
 
     </div>
 
-    <!-- TAB 3: OWNER PROFILE -->
-    <div id="view-profile" class="view-section">
-        <div class="card">
-            <div class="card-header">
-                <h4><i class="fa-solid fa-id-card"></i> Owner Profile & Social Links</h4>
-            </div>
-            <div style="text-align: center; margin-bottom: 15px;">
-                <img id="owner-profile-img-preview" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #2c3e50;">
-            </div>
-            <div class="form-group">
-                <label>Owner Image URL</label>
-                <input type="url" id="owner-img-url" class="form-control" placeholder="Image URL" onchange="previewProfileImg()">
-            </div>
-            <div class="form-group">
-                <label>Owner Details / Bio</label>
-                <textarea id="owner-details" class="form-control" rows="3" placeholder="Enter Details..."></textarea>
-            </div>
+  </div>
 
-            <h5 style="margin-top: 15px; margin-bottom: 10px;">Social Media Links</h5>
-            <div class="form-group">
-                <label>WhatsApp Link</label>
-                <input type="text" id="link-whatsapp" class="form-control" placeholder="https://wa.me/91XXXXXXXXXX">
-            </div>
-            <div class="form-group">
-                <label>Instagram Link</label>
-                <input type="text" id="link-instagram" class="form-control" placeholder="https://instagram.com/username">
-            </div>
-            <div class="form-group">
-                <label>Telegram Link</label>
-                <input type="text" id="link-telegram" class="form-control" placeholder="https://t.me/username">
-            </div>
-            <div class="form-group">
-                <label>Twitter Link</label>
-                <input type="text" id="link-twitter" class="form-control" placeholder="https://twitter.com/username">
-            </div>
-
-            <button class="btn btn-success" style="width: 100%; justify-content: center;" onclick="saveOwnerProfile()"><i class="fa-solid fa-floppy-disk"></i> Save Profile & Links</button>
-        </div>
-
-        <div class="card">
-            <h4>Live Links Preview</h4>
-            <div class="social-grid">
-                <a id="btn-wa" href="#" target="_blank" class="social-btn bg-whatsapp"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
-                <a id="btn-insta" href="#" target="_blank" class="social-btn bg-instagram"><i class="fa-brands fa-instagram"></i> Instagram</a>
-                <a id="btn-tele" href="#" target="_blank" class="social-btn bg-telegram"><i class="fa-brands fa-telegram"></i> Telegram</a>
-                <a id="btn-twit" href="#" target="_blank" class="social-btn bg-twitter"><i class="fa-brands fa-twitter"></i> Twitter</a>
-            </div>
-        </div>
+  <!-- EDIT MODALS OVERLAY -->
+  <div id="edit-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title" id="modal-title-text">Edit Item</div>
+      <div id="modal-body-content"></div>
+      <div class="flex-gap" style="justify-content: flex-end; margin-top: 15px;">
+        <button class="btn btn-secondary" onclick="closeModal()">रद्द करें</button>
+        <button class="btn btn-success" id="modal-save-btn">अपडेट करें</button>
+      </div>
     </div>
+  </div>
 
-    <!-- BOTTOM NAVIGATION -->
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchTab('homepage')">
-            <i class="fa-solid fa-house"></i>
-            <span>Homepage</span>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDYh83XSYKVdUnKh1OgBzuPOJRb9kNTxno",
+      authDomain: "my-hotel-b7e45.firebaseapp.com",
+      databaseURL: "https://my-hotel-b7e45-default-rtdb.firebaseio.com",
+      projectId: "my-hotel-b7e45",
+      storageBucket: "my-hotel-b7e45.firebasestorage.app",
+      messagingSenderId: "766471367677",
+      appId: "1:766471367677:web:6cb895ceecd170185a4794"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let ownerCreds = { id: "naitikjain240725@gmail.com", pass: "jain6799" };
+    let selectedHotelId = null;
+    let currentCategories = [];
+    let currentDishes = [];
+    let currentHotels = [];
+    let currentCredentials = [];
+    let socialLinks = {};
+
+    function ownerLogin() {
+      const id = document.getElementById('owner-id').value;
+      const pass = document.getElementById('owner-pass').value;
+      if(id === ownerCreds.id && pass === ownerCreds.pass) {
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('dashboard-section').classList.remove('hidden');
+        initDashboard();
+      } else alert("गलत Owner ID या Password!");
+    }
+
+    function showPage(pageName) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(`page-${pageName}`).classList.add('active');
+      document.getElementById(`nav-${pageName}`).classList.add('active');
+    }
+
+    function initDashboard() {
+      loadHotels();
+      loadCredentials();
+      loadProfileData();
+    }
+
+    // Modal Helpers
+    function openModal(title, bodyHtml, saveCallback) {
+      document.getElementById('modal-title-text').innerText = title;
+      document.getElementById('modal-body-content').innerHTML = bodyHtml;
+      const saveBtn = document.getElementById('modal-save-btn');
+      saveBtn.onclick = () => { saveCallback(); closeModal(); };
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+    }
+
+    // HOTELS MANAGEMENT
+    function addHotel() {
+      const name = document.getElementById('new-hotel-name').value.trim();
+      const img = document.getElementById('new-hotel-img').value.trim();
+      if(!name) { alert("होटल का नाम दर्ज करें!"); return; }
+
+      db.ref('hotels').push({ name: name, imageUrl: img, hidden: false, createdAt: firebase.database.ServerValue.TIMESTAMP })
+        .then(() => {
+          document.getElementById('new-hotel-name').value = '';
+          document.getElementById('new-hotel-img').value = '';
+        });
+    }
+
+    function loadHotels() {
+      db.ref('hotels').on('value', snapshot => {
+        const container = document.getElementById('owner-hotels-list');
+        container.innerHTML = "";
+        currentHotels = [];
+        snapshot.forEach(child => {
+          const id = child.key, h = child.val();
+          currentHotels.push({ id, ...h });
+          container.innerHTML += `
+            <div class="card">
+              <div class="flex-gap" style="justify-content:space-between; margin-bottom:10px;">
+                <h4>${h.name}</h4>
+                <span style="color:${h.hidden ? 'red':'green'}; font-weight:bold; font-size:12px;">${h.hidden ? 'Hidden':'Active'}</span>
+              </div>
+              <img src="${h.imageUrl || 'https://via.placeholder.com/150'}" style="width:100%; height:130px; object-fit:cover; border-radius:6px; margin-bottom:10px;">
+              <div class="flex-gap">
+                <button class="btn btn-sm" onclick="openDishMgr('${id}', '${h.name}')">Open Hotel Menu</button>
+                <button class="btn btn-sm btn-warning" onclick="editHotel('${id}')">✏️ Edit</button>
+                <button class="btn btn-sm btn-secondary" onclick="toggleHideHotel('${id}', ${h.hidden})">${h.hidden ? 'Unhide' : 'Hide'}</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteHotel('${id}')">🗑️ Delete</button>
+              </div>
+            </div>`;
+        });
+      });
+    }
+
+    function editHotel(hotelId) {
+      const h = currentHotels.find(item => item.id === hotelId);
+      if(!h) return;
+      const html = `
+        <div class="form-group"><label>Hotel Name</label><input type="text" id="edit-hotel-name" value="${h.name || ''}"></div>
+        <div class="form-group"><label>Image URL</label><input type="text" id="edit-hotel-img" value="${h.imageUrl || ''}"></div>`;
+      
+      openModal("Edit Hotel Details", html, () => {
+        const newName = document.getElementById('edit-hotel-name').value.trim();
+        const newImg = document.getElementById('edit-hotel-img').value.trim();
+        if(newName) {
+          db.ref('hotels/' + hotelId).update({ name: newName, imageUrl: newImg });
+        }
+      });
+    }
+
+    function toggleHideHotel(id, currentStatus) { db.ref('hotels/' + id).update({ hidden: !currentStatus }); }
+    function deleteHotel(id) { if(confirm("क्या आप इस होटल को डिलीट करना चाहते हैं?")) db.ref('hotels/' + id).remove(); }
+
+    // CATEGORIES & DISHES MANAGEMENT
+    function openDishMgr(hotelId, hotelName) {
+      selectedHotelId = hotelId;
+      document.getElementById('current-hotel-title').innerText = `🏨 ${hotelName} - Menu Management`;
+      document.getElementById('hotel-mgr-view').classList.add('hidden');
+      document.getElementById('dish-mgr-view').classList.remove('hidden');
+      
+      loadCategories();
+      loadDishes();
+    }
+
+    function backToHotelMgr() {
+      document.getElementById('dish-mgr-view').classList.add('hidden');
+      document.getElementById('hotel-mgr-view').classList.remove('hidden');
+    }
+
+    function addCategory() {
+      if (!selectedHotelId) { alert("कृपया पहले होटल चुनें!"); return; }
+      const nameInput = document.getElementById('cat-name');
+      const imgInput = document.getElementById('cat-img');
+      const name = nameInput.value.trim();
+      const img = imgInput.value.trim();
+
+      if(!name) { alert("Main Category Title का नाम भरना अनिवार्य है!"); return; }
+
+      const newOrderIndex = currentCategories.length > 0 
+        ? Math.max(...currentCategories.map(c => Number(c.orderIndex) || 0)) + 1 
+        : 1;
+
+      db.ref('categories').push({
+        hotelId: selectedHotelId,
+        name: name,
+        imageUrl: img,
+        orderIndex: newOrderIndex,
+        hidden: false,
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+      }).then(() => {
+        alert(`Main Food Category '${name}' जुड़ गई!`);
+        nameInput.value = '';
+        imgInput.value = '';
+      }).catch(err => alert("Error: " + err.message));
+    }
+
+    function loadCategories() {
+      db.ref('categories').on('value', snapshot => {
+        currentCategories = [];
+        snapshot.forEach(child => {
+          const c = child.val();
+          if(c.hotelId === selectedHotelId) {
+            currentCategories.push({ id: child.key, ...c });
+          }
+        });
+        currentCategories.sort((a,b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
+
+        // Update Sub-Food Dropdown
+        const select = document.getElementById('dish-cat-select');
+        select.innerHTML = '<option value="">-- Main Category चुनें --</option>';
+        currentCategories.forEach(c => select.innerHTML += `<option value="${c.id}">${c.name}</option>`);
+
+        renderGroupedMenu();
+      });
+    }
+
+    function editCategory(catId) {
+      const cat = currentCategories.find(c => c.id === catId);
+      if(!cat) return;
+      const html = `
+        <div class="form-group"><label>Category Title Name</label><input type="text" id="edit-cat-name" value="${cat.name || ''}"></div>
+        <div class="form-group"><label>Banner Image URL</label><input type="text" id="edit-cat-img" value="${cat.imageUrl || ''}"></div>`;
+      
+      openModal("Edit Main Food Category", html, () => {
+        const newName = document.getElementById('edit-cat-name').value.trim();
+        const newImg = document.getElementById('edit-cat-img').value.trim();
+        if(newName) {
+          db.ref('categories/' + catId).update({ name: newName, imageUrl: newImg });
+        }
+      });
+    }
+
+    function moveCategory(catId, direction) {
+      const index = currentCategories.findIndex(c => c.id === catId);
+      if (index === -1) return;
+
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= currentCategories.length) return;
+
+      const currentCat = currentCategories[index];
+      const targetCat = currentCategories[targetIndex];
+
+      const updates = {};
+      updates['categories/' + currentCat.id + '/orderIndex'] = targetCat.orderIndex || (targetIndex + 1);
+      updates['categories/' + targetCat.id + '/orderIndex'] = currentCat.orderIndex || (index + 1);
+
+      db.ref().update(updates).catch(err => alert("Reorder Error: " + err.message));
+    }
+
+    function toggleHideCategory(catId, current) {
+      db.ref('categories/' + catId).update({ hidden: !current });
+    }
+
+    function deleteCategory(catId) {
+      if(confirm("क्या आप इस Category को डिलीट करना चाहते हैं?")) {
+        db.ref('categories/' + catId).remove();
+      }
+    }
+
+    function addDish() {
+      if (!selectedHotelId) { alert("कृपया पहले होटल चुनें!"); return; }
+
+      const catId = document.getElementById('dish-cat-select').value;
+      const name = document.getElementById('dish-name').value.trim();
+      const category = document.getElementById('dish-category').value.trim();
+      const img = document.getElementById('dish-img').value.trim();
+      const price = Number(document.getElementById('dish-price').value);
+      const qty = document.getElementById('dish-qty').value.trim();
+
+      if(!catId) { alert("कृपया डिश जोड़ने के लिए Main Category चुनें!"); return; }
+      if(!name || !price) { alert("डिश का नाम और मूल्य भरें!"); return; }
+
+      const catDishes = currentDishes.filter(d => d.categoryId === catId);
+      const newOrderIndex = catDishes.length > 0 
+        ? Math.max(...catDishes.map(d => Number(d.orderIndex) || 0)) + 1 
+        : 1;
+
+      db.ref('dishes').push({
+        hotelId: selectedHotelId,
+        categoryId: catId,
+        name: name,
+        category: category,
+        imageUrl: img,
+        price: price,
+        quantityInfo: qty,
+        orderIndex: newOrderIndex,
+        hidden: false
+      }).then(() => {
+        alert("Sub Food (Dish) जुड़ गई!");
+        document.getElementById('dish-name').value = '';
+        document.getElementById('dish-category').value = '';
+        document.getElementById('dish-img').value = '';
+        document.getElementById('dish-price').value = '';
+        document.getElementById('dish-qty').value = '';
+      }).catch(err => alert("Error: " + err.message));
+    }
+
+    function loadDishes() {
+      db.ref('dishes').on('value', snapshot => {
+        currentDishes = [];
+        snapshot.forEach(child => {
+          const d = child.val();
+          if(d.hotelId === selectedHotelId) {
+            currentDishes.push({ id: child.key, ...d });
+          }
+        });
+        renderGroupedMenu();
+      });
+    }
+
+    // RENDER HIERARCHICAL MENU IN OWNER PANEL
+    function renderGroupedMenu() {
+      const container = document.getElementById('hierarchical-menu-container');
+      container.innerHTML = "";
+
+      if(currentCategories.length === 0) {
+        container.innerHTML = "<div class='card' style='text-align:center; color:#777;'>अभी कोई Main Category नहीं बनाई गई है। ऊपर फॉर्म से नई कैटेगिरी जोड़ें।</div>";
+        return;
+      }
+
+      currentCategories.forEach((cat, idx) => {
+        // Filter and sort sub-foods inside this category
+        const catDishes = currentDishes
+          .filter(d => d.categoryId === cat.id)
+          .sort((a,b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
+
+        let subFoodHtml = "";
+        if(catDishes.length === 0) {
+          subFoodHtml = `<p style="font-size:12px; color:#888; padding:8px;">इस कैटेगिरी में कोई Sub-Food नहीं है।</p>`;
+        } else {
+          catDishes.forEach((dish, dIdx) => {
+            subFoodHtml += `
+              <div class="dish-item-row">
+                <img src="${dish.imageUrl || 'https://via.placeholder.com/50'}" alt="${dish.name}">
+                <div class="dish-info">
+                  <div class="dish-name">${dIdx+1}. ${dish.name}</div>
+                  <div class="dish-meta">${dish.category ? dish.category + ' • ' : ''}${dish.quantityInfo || ''}</div>
+                  <div class="dish-price">₹${dish.price}</div>
+                </div>
+                <div class="flex-gap">
+                  <button class="btn btn-sm" onclick="moveDish('${dish.id}', 'up')">▲</button>
+                  <button class="btn btn-sm" onclick="moveDish('${dish.id}', 'down')">▼</button>
+                  <button class="btn btn-sm btn-warning" onclick="editDish('${dish.id}')">✏️</button>
+                  <button class="btn btn-sm btn-secondary" onclick="toggleHideDish('${dish.id}', ${dish.hidden})">${dish.hidden ? 'Unhide' : 'Hide'}</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteDish('${dish.id}')">🗑️</button>
+                </div>
+              </div>`;
+          });
+        }
+
+        container.innerHTML += `
+          <div class="cat-wrapper">
+            <div class="cat-header">
+              <div class="cat-header-title">
+                ${cat.imageUrl ? `<img src="${cat.imageUrl}">` : ''}
+                <span>#${idx+1} ${cat.name} ${cat.hidden ? '<small style="color:yellow;">(Hidden)</small>' : ''}</span>
+              </div>
+              <div class="flex-gap">
+                <button class="btn btn-sm" style="background:#fff; color:#333;" onclick="moveCategory('${cat.id}', 'up')">▲ Main Up</button>
+                <button class="btn btn-sm" style="background:#fff; color:#333;" onclick="moveCategory('${cat.id}', 'down')">▼ Main Down</button>
+                <button class="btn btn-sm btn-warning" onclick="editCategory('${cat.id}')">✏️ Edit Title</button>
+                <button class="btn btn-sm btn-secondary" onclick="toggleHideCategory('${cat.id}', ${cat.hidden})">${cat.hidden ? 'Unhide' : 'Hide'}</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteCategory('${cat.id}')">🗑️ Delete</button>
+              </div>
+            </div>
+            <div class="sub-food-list">
+              <h5 style="margin-bottom:8px; color:#555; font-size:12px;">SUB FOOD DISHES IN (${cat.name}):</h5>
+              ${subFoodHtml}
+            </div>
+          </div>`;
+      });
+    }
+
+    // Reorder Sub-Food Dish within its Category
+    function moveDish(dishId, direction) {
+      const dish = currentDishes.find(d => d.id === dishId);
+      if (!dish) return;
+
+      const catDishes = currentDishes
+        .filter(d => d.categoryId === dish.categoryId)
+        .sort((a,b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
+
+      const index = catDishes.findIndex(d => d.id === dishId);
+      if (index === -1) return;
+
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= catDishes.length) return;
+
+      const currentDish = catDishes[index];
+      const targetDish = catDishes[targetIndex];
+
+      const updates = {};
+      updates['dishes/' + currentDish.id + '/orderIndex'] = targetDish.orderIndex || (targetIndex + 1);
+      updates['dishes/' + targetDish.id + '/orderIndex'] = currentDish.orderIndex || (index + 1);
+
+      db.ref().update(updates).catch(err => alert("Dish Reorder Error: " + err.message));
+    }
+
+    function editDish(dishId) {
+      const dish = currentDishes.find(d => d.id === dishId);
+      if(!dish) return;
+
+      let catOptions = "";
+      currentCategories.forEach(c => {
+        catOptions += `<option value="${c.id}" ${c.id === dish.categoryId ? 'selected' : ''}>${c.name}</option>`;
+      });
+
+      const html = `
+        <div class="form-group"><label>Main Category</label><select id="edit-dish-cat">${catOptions}</select></div>
+        <div class="form-group"><label>Dish Name</label><input type="text" id="edit-dish-name" value="${dish.name || ''}"></div>
+        <div class="form-group"><label>Variety / Description</label><input type="text" id="edit-dish-category" value="${dish.category || ''}"></div>
+        <div class="form-group"><label>Image URL</label><input type="text" id="edit-dish-img" value="${dish.imageUrl || ''}"></div>
+        <div class="form-group"><label>Price Amount (₹)</label><input type="number" id="edit-dish-price" value="${dish.price || 0}"></div>
+        <div class="form-group"><label>Quantity Info</label><input type="text" id="edit-dish-qty" value="${dish.quantityInfo || ''}"></div>`;
+
+      openModal("Edit Sub Food Details", html, () => {
+        const newCat = document.getElementById('edit-dish-cat').value;
+        const newName = document.getElementById('edit-dish-name').value.trim();
+        const newCategoryText = document.getElementById('edit-dish-category').value.trim();
+        const newImg = document.getElementById('edit-dish-img').value.trim();
+        const newPrice = Number(document.getElementById('edit-dish-price').value);
+        const newQty = document.getElementById('edit-dish-qty').value.trim();
+
+        if(newName && newPrice) {
+          db.ref('dishes/' + dishId).update({
+            categoryId: newCat,
+            name: newName,
+            category: newCategoryText,
+            imageUrl: newImg,
+            price: newPrice,
+            quantityInfo: newQty
+          });
+        }
+      });
+    }
+
+    function toggleHideDish(id, currentStatus) { db.ref('dishes/' + id).update({ hidden: !currentStatus }); }
+    function deleteDish(id) { if(confirm("क्या आप इस डिश को डिलीट करना चाहते हैं?")) db.ref('dishes/' + id).remove(); }
+
+    // PASSWORDS MANAGEMENT
+    function saveCredential() {
+      const role = document.getElementById('user-role').value;
+      const email = document.getElementById('cred-email').value.trim();
+      const pass = document.getElementById('cred-pass').value.trim();
+      if(!email || !pass) { alert("ID और Password भरें!"); return; }
+
+      db.ref('credentials').push({ role: role, email: email, password: pass, banned: false }).then(() => {
+        alert("Credentials सहेजे गए!");
+        document.getElementById('cred-email').value = '';
+        document.getElementById('cred-pass').value = '';
+      });
+    }
+
+    function loadCredentials() {
+      db.ref('credentials').on('value', snapshot => {
+        const container = document.getElementById('credentials-list');
+        container.innerHTML = "";
+        currentCredentials = [];
+        snapshot.forEach(child => {
+          const id = child.key, c = child.val();
+          currentCredentials.push({ id, ...c });
+          container.innerHTML += `
+            <div class="card">
+              <p><strong>Role:</strong> ${c.role}</p>
+              <p><strong>ID:</strong> ${c.email}</p>
+              <p><strong>Password:</strong> ${c.password}</p>
+              <p><strong>Status:</strong> <span style="color:${c.banned ? 'red':'green'}; font-weight:bold;">${c.banned ? 'Banned':'Active'}</span></p><br>
+              <div class="flex-gap">
+                <button class="btn btn-sm btn-warning" onclick="editCredential('${id}')">✏️ Edit Credentials</button>
+                <button class="btn btn-sm btn-secondary" onclick="toggleBan('${id}', ${c.banned})">${c.banned ? 'Unban' : 'Temp Ban'}</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteCred('${id}')">🗑️ Delete</button>
+              </div>
+            </div>`;
+        });
+      });
+    }
+
+    function editCredential(credId) {
+      const c = currentCredentials.find(item => item.id === credId);
+      if(!c) return;
+
+      const html = `
+        <div class="form-group">
+          <label>Role</label>
+          <select id="edit-cred-role">
+            <option value="Host" ${c.role === 'Host' ? 'selected' : ''}>Host</option>
+            <option value="Delivery Boy" ${c.role === 'Delivery Boy' ? 'selected' : ''}>Delivery Boy</option>
+          </select>
         </div>
-        <div class="nav-item" onclick="switchTab('passwords')">
-            <i class="fa-solid fa-key"></i>
-            <span>Passwords</span>
-        </div>
-        <div class="nav-item" onclick="switchTab('profile')">
-            <i class="fa-solid fa-user"></i>
-            <span>Profile</span>
-        </div>
-    </div>
+        <div class="form-group"><label>ID (Email)</label><input type="text" id="edit-cred-email" value="${c.email || ''}"></div>
+        <div class="form-group"><label>Password</label><input type="text" id="edit-cred-pass" value="${c.password || ''}"></div>`;
 
-    <!-- JAVASCRIPT LOGIC (DIRECT FIRESTORE CONNECTION) -->
-    <script>
-        // 1. Firebase Configuration
-        const firebaseConfig = {
-          apiKey: "AIzaSyDYh83XSYKVdUnKh1OgBzuPOJRb9kNTxno",
-          authDomain: "my-hotel-b7e45.firebaseapp.com",
-          projectId: "my-hotel-b7e45",
-          storageBucket: "my-hotel-b7e45.firebasestorage.app",
-          messagingSenderId: "766471367677",
-          appId: "1:766471367677:web:6cb895ceecd170185a4794"
-        };
+      openModal("Edit Credential Details", html, () => {
+        const newRole = document.getElementById('edit-cred-role').value;
+        const newEmail = document.getElementById('edit-cred-email').value.trim();
+        const newPass = document.getElementById('edit-cred-pass').value.trim();
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        let currentActiveHotelId = null;
-        let hotels = [];
-        let dishes = [];
-
-        // --- AUTHENTICATION ---
-        function checkOwnerLogin() {
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-pass').value;
-
-            const storedPass = localStorage.getItem('owner_pass') || "jain6799";
-
-            if (email === "naitikjain240725@gmail.com" && pass === storedPass) {
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('owner-active-id').value = email;
-                document.getElementById('owner-current-pass-display').innerText = storedPass;
-                listenToHotelsRealtime();
-                loadAccounts();
-                loadProfile();
-            } else {
-                alert("गलत ID या Password!");
-            }
+        if(newEmail && newPass) {
+          db.ref('credentials/' + credId).update({ role: newRole, email: newEmail, password: newPass });
         }
+      });
+    }
 
-        // --- TAB SWITCHING ---
-        function switchTab(tabName) {
-            document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+    function toggleBan(id, current) { db.ref('credentials/' + id).update({ banned: !current }); }
+    function deleteCred(id) { if(confirm("क्या आप इसे डिलीट करना चाहते हैं?")) db.ref('credentials/' + id).remove(); }
 
-            if (tabName === 'homepage') {
-                document.getElementById('view-homepage').classList.add('active');
-                document.querySelectorAll('.nav-item')[0].classList.add('active');
-            } else if (tabName === 'passwords') {
-                document.getElementById('view-passwords').classList.add('active');
-                document.querySelectorAll('.nav-item')[1].classList.add('active');
-            } else if (tabName === 'profile') {
-                document.getElementById('view-profile').classList.add('active');
-                document.querySelectorAll('.nav-item')[2].classList.add('active');
-            }
+    function changeOwnerPassword() {
+      const newPass = document.getElementById('new-owner-pass').value.trim();
+      if(newPass) {
+        ownerCreds.pass = newPass;
+        document.getElementById('cur-owner-pass').innerText = newPass;
+        document.getElementById('new-owner-pass').value = '';
+        alert("Owner पासवर्ड अपडेट हो गया!");
+      }
+    }
+
+    // PROFILE MANAGEMENT
+    function saveProfileDetails() {
+      const data = {
+        hostImg: document.getElementById('host-img-url').value.trim(),
+        hostDetails: document.getElementById('host-details').value.trim(),
+        wa: document.getElementById('link-wa').value.trim(),
+        insta: document.getElementById('link-insta').value.trim(),
+        tg: document.getElementById('link-tg').value.trim(),
+        tw: document.getElementById('link-tw').value.trim()
+      };
+      db.ref('settings/ownerProfile').set(data).then(() => alert("प्रोफ़ाइल विवरण सेव हो गया!"));
+    }
+
+    function loadProfileData() {
+      db.ref('settings/ownerProfile').once('value').then(snapshot => {
+        if(snapshot.exists()) {
+          const d = snapshot.val();
+          socialLinks = d;
+          document.getElementById('host-img-url').value = d.hostImg || '';
+          document.getElementById('host-details').value = d.hostDetails || '';
+          document.getElementById('link-wa').value = d.wa || '';
+          document.getElementById('link-insta').value = d.insta || '';
+          document.getElementById('link-tg').value = d.tg || '';
+          document.getElementById('link-tw').value = d.tw || '';
         }
+      });
+    }
 
-        // --- REALTIME HOTELS SYNC TO USER PANEL ---
-        function listenToHotelsRealtime() {
-            db.collection('hotels').onSnapshot(snapshot => {
-                hotels = [];
-                snapshot.forEach(doc => hotels.push({ id: doc.id, ...doc.data() }));
-                renderHotels();
-            });
-        }
-
-        function renderHotels() {
-            const container = document.getElementById('hotels-list-container');
-            container.innerHTML = '';
-            hotels.forEach(h => {
-                const statusBadge = h.hidden ? 
-                    `<span class="badge badge-hidden">Hidden For User</span>` : 
-                    `<span class="badge badge-visible">Visible On User Panel</span>`;
-
-                container.innerHTML += `
-                    <div class="item-row">
-                        <img src="${h.image}" class="item-img">
-                        <div class="item-details">
-                            <strong>${h.name}</strong> ${statusBadge}
-                        </div>
-                        <div style="display: flex; gap: 5px;">
-                            <button class="btn btn-primary btn-sm" onclick="openHotelDishes('${h.id}', '${h.name}')"><i class="fa-solid fa-folder-open"></i> Open Dishes</button>
-                            <button class="btn btn-warning btn-sm" onclick="toggleHideHotel('${h.id}', ${h.hidden})">${h.hidden ? 'Unhide' : 'Hide'}</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteHotel('${h.id}')"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function addNewHotel() {
-            const name = document.getElementById('new-hotel-name').value;
-            const image = document.getElementById('new-hotel-image').value;
-
-            if (!name || !image) return alert("कृपया होटल का नाम और Image URL भरें!");
-
-            db.collection('hotels').add({
-                name: name,
-                image: image,
-                hidden: false
-            }).then(() => {
-                document.getElementById('new-hotel-name').value = '';
-                document.getElementById('new-hotel-image').value = '';
-                alert("होटल ऐड हो गई! यह अब User Panel पर दिख रही है।");
-            });
-        }
-
-        function toggleHideHotel(id, currentHiddenStatus) {
-            db.collection('hotels').doc(id).update({
-                hidden: !currentHiddenStatus
-            });
-        }
-
-        function deleteHotel(id) {
-            if (confirm("इस होटल को Delete करना चाहते हैं?")) {
-                db.collection('hotels').doc(id).delete();
-            }
-        }
-
-        // --- REALTIME DISHES SYNC TO USER PANEL ---
-        function openHotelDishes(hotelId, hotelName) {
-            currentActiveHotelId = hotelId;
-            document.getElementById('selected-hotel-title').innerText = `Add Dish to ${hotelName}`;
-            document.getElementById('hotel-mgmt-container').style.display = 'none';
-            document.getElementById('dish-mgmt-container').style.display = 'block';
-            document.getElementById('back-to-hotels-btn').style.display = 'inline-flex';
-
-            listenToDishesRealtime(hotelId);
-        }
-
-        function showHotelManagement() {
-            currentActiveHotelId = null;
-            document.getElementById('dish-mgmt-container').style.display = 'none';
-            document.getElementById('hotel-mgmt-container').style.display = 'block';
-            document.getElementById('back-to-hotels-btn').style.display = 'none';
-        }
-
-        function listenToDishesRealtime(hotelId) {
-            db.collection('dishes').where('hotelId', '==', hotelId).onSnapshot(snapshot => {
-                dishes = [];
-                snapshot.forEach(doc => dishes.push({ id: doc.id, ...doc.data() }));
-                dishes.sort((a, b) => (a.order || 0) - (b.order || 0));
-                renderDishes();
-            });
-        }
-
-        function renderDishes() {
-            const container = document.getElementById('dishes-list-container');
-            container.innerHTML = '';
-
-            dishes.forEach((d, index) => {
-                const statusBadge = d.hidden ? 
-                    `<span class="badge badge-hidden">Hidden</span>` : 
-                    `<span class="badge badge-visible">Visible</span>`;
-
-                container.innerHTML += `
-                    <div class="item-row">
-                        <strong style="color: #2980b9;">#${index + 1}</strong>
-                        <img src="${d.image}" class="item-img">
-                        <div class="item-details">
-                            <div><strong>${d.name}</strong> (${d.category})</div>
-                            <div style="font-size: 12px; color: #666;">Rate: ₹${d.price} | Qty: ${d.qty}</div>
-                            ${statusBadge}
-                        </div>
-                        <div style="display: flex; gap: 4px; flex-direction: column;">
-                            <button class="btn btn-dark btn-sm" onclick="reorderDish('${d.id}', -1)"><i class="fa-solid fa-arrow-up"></i></button>
-                            <button class="btn btn-dark btn-sm" onclick="reorderDish('${d.id}', 1)"><i class="fa-solid fa-arrow-down"></i></button>
-                        </div>
-                        <div style="display: flex; gap: 4px; flex-direction: column;">
-                            <button class="btn btn-warning btn-sm" onclick="toggleHideDish('${d.id}', ${d.hidden})">${d.hidden ? 'Unhide' : 'Hide'}</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteDish('${d.id}')"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function addNewDish() {
-            const name = document.getElementById('dish-main-name').value;
-            const category = document.getElementById('dish-category').value;
-            const price = parseFloat(document.getElementById('dish-price').value);
-            const qty = document.getElementById('dish-qty').value;
-            const image = document.getElementById('dish-image').value;
-
-            if (!name || !category || !price || !image) return alert("कृपया पूरी जानकारी भरें!");
-
-            db.collection('dishes').add({
-                hotelId: currentActiveHotelId,
-                name: name,
-                category: category,
-                price: price,
-                qty: qty || "1",
-                image: image,
-                hidden: false,
-                order: dishes.length + 1
-            }).then(() => {
-                document.getElementById('dish-main-name').value = '';
-                document.getElementById('dish-category').value = '';
-                document.getElementById('dish-price').value = '';
-                document.getElementById('dish-qty').value = '';
-                document.getElementById('dish-image').value = '';
-                alert("Dish सफलतापूर्वक ऐड हो गई!");
-            });
-        }
-
-        function toggleHideDish(id, currentHiddenStatus) {
-            db.collection('dishes').doc(id).update({
-                hidden: !currentHiddenStatus
-            });
-        }
-
-        function deleteDish(id) {
-            if (confirm("इस Dish को Delete करना चाहते हैं?")) {
-                db.collection('dishes').doc(id).delete();
-            }
-        }
-
-        function reorderDish(id, direction) {
-            const idx = dishes.findIndex(d => d.id === id);
-            if (idx + direction >= 0 && idx + direction < dishes.length) {
-                const currentDoc = dishes[idx];
-                const targetDoc = dishes[idx + direction];
-
-                db.collection('dishes').doc(currentDoc.id).update({ order: targetDoc.order || (idx + direction + 1) });
-                db.collection('dishes').doc(targetDoc.id).update({ order: currentDoc.order || (idx + 1) });
-            }
-        }
-
-        // --- ACCOUNTS & PASSWORDS MANAGEMENT ---
-        function loadAccounts() {
-            db.collection('host_accounts').onSnapshot(snap => {
-                const container = document.getElementById('host-accounts-list');
-                container.innerHTML = '';
-                snap.forEach(doc => {
-                    const acc = { id: doc.id, ...doc.data() };
-                    container.innerHTML += `
-                        <div class="item-row">
-                            <div class="item-details">
-                                <strong>${acc.id}</strong> (Pass: ${acc.pass})
-                                ${acc.banned ? '<span class="badge badge-banned">Banned</span>' : ''}
-                            </div>
-                            <button class="btn btn-warning btn-sm" onclick="toggleBanAcc('host_accounts', '${acc.id}', ${acc.banned})">${acc.banned ? 'Unban' : 'Ban'}</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteAcc('host_accounts', '${acc.id}')"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    `;
-                });
-            });
-
-            db.collection('delivery_accounts').onSnapshot(snap => {
-                const container = document.getElementById('delivery-accounts-list');
-                container.innerHTML = '';
-                snap.forEach(doc => {
-                    const acc = { id: doc.id, ...doc.data() };
-                    container.innerHTML += `
-                        <div class="item-row">
-                            <div class="item-details">
-                                <strong>${acc.id}</strong> (Pass: ${acc.pass})
-                                ${acc.banned ? '<span class="badge badge-banned">Banned</span>' : ''}
-                            </div>
-                            <button class="btn btn-warning btn-sm" onclick="toggleBanAcc('delivery_accounts', '${acc.id}', ${acc.banned})">${acc.banned ? 'Unban' : 'Ban'}</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteAcc('delivery_accounts', '${acc.id}')"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    `;
-                });
-            });
-        }
-
-        function saveHostAccount() {
-            const id = document.getElementById('host-id-input').value;
-            const pass = document.getElementById('host-pass-input').value;
-            if(!id || !pass) return alert("Host ID और Password भरें!");
-
-            db.collection('host_accounts').doc(id).set({ pass: pass, banned: false }).then(() => {
-                document.getElementById('host-id-input').value = '';
-                document.getElementById('host-pass-input').value = '';
-            });
-        }
-
-        function saveDeliveryAccount() {
-            const id = document.getElementById('delivery-id-input').value;
-            const pass = document.getElementById('delivery-pass-input').value;
-            if(!id || !pass) return alert("Delivery ID और Password भरें!");
-
-            db.collection('delivery_accounts').doc(id).set({ pass: pass, banned: false }).then(() => {
-                document.getElementById('delivery-id-input').value = '';
-                document.getElementById('delivery-pass-input').value = '';
-            });
-        }
-
-        function toggleBanAcc(collection, id, currentBanned) {
-            db.collection(collection).doc(id).update({ banned: !currentBanned });
-        }
-
-        function deleteAcc(collection, id) {
-            db.collection(collection).doc(id).delete();
-        }
-
-        function changeOwnerPassword() {
-            const newPass = document.getElementById('owner-new-pass').value;
-            if(!newPass) return alert("नया पासवर्ड दर्ज करें!");
-
-            localStorage.setItem('owner_pass', newPass);
-            document.getElementById('owner-current-pass-display').innerText = newPass;
-            document.getElementById('owner-new-pass').value = '';
-            alert("Owner Password सफलतापूर्वक बदला गया!");
-        }
-
-        // --- PROFILE & SOCIAL MEDIA ---
-        function previewProfileImg() {
-            const url = document.getElementById('owner-img-url').value;
-            if(url) document.getElementById('owner-profile-img-preview').src = url;
-        }
-
-        function saveOwnerProfile() {
-            const profile = {
-                img: document.getElementById('owner-img-url').value,
-                details: document.getElementById('owner-details').value,
-                wa: document.getElementById('link-whatsapp').value,
-                insta: document.getElementById('link-instagram').value,
-                tele: document.getElementById('link-telegram').value,
-                twit: document.getElementById('link-twitter').value
-            };
-
-            db.collection('settings').doc('owner_profile').set(profile).then(() => {
-                alert("Profile & Links सेव हो गए!");
-            });
-        }
-
-        function loadProfile() {
-            db.collection('settings').doc('owner_profile').get().then(doc => {
-                if(doc.exists) {
-                    const p = doc.data();
-                    document.getElementById('owner-img-url').value = p.img || '';
-                    document.getElementById('owner-details').value = p.details || '';
-                    document.getElementById('link-whatsapp').value = p.wa || '';
-                    document.getElementById('link-instagram').value = p.insta || '';
-                    document.getElementById('link-telegram').value = p.tele || '';
-                    document.getElementById('link-twitter').value = p.twit || '';
-
-                    if(p.img) document.getElementById('owner-profile-img-preview').src = p.img;
-                    if(p.wa) document.getElementById('btn-wa').href = p.wa;
-                    if(p.insta) document.getElementById('btn-insta').href = p.insta;
-                    if(p.tele) document.getElementById('btn-tele').href = p.tele;
-                    if(p.twit) document.getElementById('btn-twit').href = p.twit;
-                }
-            });
-        }
-    </script>
+    function openLink(type) {
+      if(socialLinks && socialLinks[type]) window.open(socialLinks[type], '_blank');
+      else alert("यह लिंक सेट नहीं किया गया है!");
+    }
+  </script>
 </body>
 </html>
