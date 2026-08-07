@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Host Panel - Food Delivery App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f8; padding-bottom: 75px; color: #333; }
+    header { background: #d84315; color: #fff; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 1000; font-size: 19px; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+    .container { padding: 12px; max-width: 650px; margin: auto; }
+    .page { display: none; }
+    .page.active { display: block; }
+    
+    .card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e0e0e0; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px; color: #444; }
+    .form-group input { width: 100%; padding: 10px; border: 1px solid #cccccc; border-radius: 6px; font-size: 14px; outline: none; }
+    
+    .btn { background: #d84315; color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 100%; }
+    .btn-success { background: #2e7d32; }
+    .btn-secondary { background: #616161; }
+    .btn-maps { background: #1565c0; color: white; padding: 6px 12px; font-size: 12px; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; font-weight: bold; }
+    .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 4px; width: auto; }
+    
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #e0e0e0; z-index: 1000; }
+    .nav-item { text-align: center; color: #666; font-size: 13px; cursor: pointer; flex-grow: 1; }
+    .nav-item.active { color: #d84315; font-weight: bold; }
+    .nav-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+    
+    .order-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
+    .order-id { font-weight: bold; font-size: 15px; color: #d84315; }
+    .info-group { margin-bottom: 6px; font-size: 13.5px; }
+    .items-box { background: #fafafa; border-radius: 6px; padding: 10px; margin: 10px 0; border: 1px dashed #ccc; }
+    .otp-verify-box { background: #e3f2fd; border-radius: 6px; padding: 10px; margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .otp-input { padding: 8px; border: 1px solid #90caf9; border-radius: 4px; width: 120px; font-weight: bold; text-align: center; }
+    .badge { background: #d84315; color: #fff; border-radius: 10px; padding: 2px 7px; font-size: 11px; margin-left: 4px; }
+    .hidden { display: none !important; }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+  <header>Host Panel Control</header>
+
+  <div class="container">
+
+    <!-- LOGIN -->
+    <div id="login-section" class="card">
+      <h2 style="color:#d84315; margin-bottom: 15px; text-align: center;">Host Login</h2>
+      <p style="font-size: 12px; color: #666; margin-bottom: 15px; text-align: center;">
+        केवल Owner Panel में बनाई गई Host ID ही यहाँ काम करेगी।
+      </p>
+      <div class="form-group"><label>Host ID (Email)</label><input type="text" id="host-id" placeholder="ID/Email दर्ज करें"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="host-pass" placeholder="Password दर्ज करें"></div>
+      <button class="btn" onclick="hostLogin()">Login</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard-section" class="hidden">
+
+      <div style="background:#fff; padding:10px 15px; border-radius:8px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #ddd;">
+        <div>
+          <div style="font-size:12px; color:#666;">Logged Host: <b id="loggedInHostEmail">host</b></div>
+          <div style="font-size:14px; font-weight:bold; color:#d84315;">🏨 होटल: <span id="assignedHotelName">Loading...</span></div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="hostLogout()">Logout</button>
+      </div>
+
+      <!-- NEW ORDERS -->
+      <div id="page-new-orders" class="page active">
+        <h3 style="margin-bottom: 12px; color:#d84315;">🆕 नए ऑर्डर (New Orders)</h3>
+        <div id="new-orders-container"></div>
+      </div>
+
+      <!-- HISTORY -->
+      <div id="page-order-history" class="page">
+        <h3 style="margin-bottom: 12px; color:#2e7d32;">📜 ऑर्डर इतिहास (Order History)</h3>
+        <div id="history-orders-container"></div>
+      </div>
+
+      <!-- BOTTOM NAV -->
+      <div class="bottom-nav">
+        <div class="nav-item active" id="nav-new" onclick="showPage('new-orders')">
+          <span class="nav-icon">🛎️</span>
+          New Orders <span id="new-count-badge" class="badge">0</span>
+        </div>
+        <div class="nav-item" id="nav-history" onclick="showPage('order-history')">
+          <span class="nav-icon">📜</span>
+          Order History
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDYh83XSYKVdUnKh1OgBzuPOJRb9kNTxno",
+      authDomain: "my-hotel-b7e45.firebaseapp.com",
+      databaseURL: "https://my-hotel-b7e45-default-rtdb.firebaseio.com",
+      projectId: "my-hotel-b7e45",
+      storageBucket: "my-hotel-b7e45.firebasestorage.app",
+      messagingSenderId: "766471367677",
+      appId: "1:766471367677:web:6cb895ceecd170185a4794"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let currentHostObj = null;
+    let usersMap = {};
+    let assignedHotelId = "";
+    let assignedHotelName = "";
+
+    function hostLogin() {
+      const inputId = document.getElementById('host-id').value.trim();
+      const inputPass = document.getElementById('host-pass').value.trim();
+      if(!inputId || !inputPass) { alert("ID और Password दर्ज करें!"); return; }
+
+      db.ref('credentials').once('value').then(snapshot => {
+        let found = false;
+        snapshot.forEach(child => {
+          const cred = child.val();
+          if(cred.role === 'Host' && cred.email === inputId && cred.password === inputPass) {
+            if(cred.banned) { alert("यह ID बैन है!"); found = true; return; }
+            found = true;
+            currentHostObj = cred;
+            assignedHotelId = cred.assignedHotelId;
+            assignedHotelName = cred.assignedHotelName || "Hotel";
+
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('dashboard-section').classList.remove('hidden');
+            document.getElementById('loggedInHostEmail').innerText = inputId;
+            document.getElementById('assignedHotelName').innerText = assignedHotelName;
+
+            initHostDashboard();
+          }
+        });
+
+        if(!found) alert("अमान्य ID/Password! यह ID केवल Owner Panel से बनेगी।");
+      });
+    }
+
+    function hostLogout() {
+      document.getElementById('dashboard-section').classList.add('hidden');
+      document.getElementById('login-section').classList.remove('hidden');
+    }
+
+    function showPage(pageName) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(`page-${pageName}`).classList.add('active');
+      if(pageName === 'new-orders') document.getElementById('nav-new').classList.add('active');
+      else document.getElementById('nav-history').classList.add('active');
+    }
+
+    function initHostDashboard() {
+      db.ref('users').on('value', snap => {
+        usersMap = {};
+        snap.forEach(c => { usersMap[c.key] = c.val(); });
+        loadAssignedHotelOrders();
+      });
+    }
+
+    function loadAssignedHotelOrders() {
+      db.ref('orders').on('value', snapshot => {
+        const newContainer = document.getElementById('new-orders-container');
+        const historyContainer = document.getElementById('history-orders-container');
+
+        newContainer.innerHTML = "";
+        historyContainer.innerHTML = "";
+
+        let newCount = 0;
+        let hotelOrders = [];
+
+        snapshot.forEach(child => {
+          const data = child.val();
+          // FILTER: ONLY ORDERS FOR THIS HOST'S ASSIGNED HOTEL
+          if(data.hotelId === assignedHotelId) {
+            hotelOrders.push({ id: child.key, ...data });
+          }
+        });
+
+        hotelOrders.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+        hotelOrders.forEach(order => {
+          const userObj = usersMap[order.userId] || {};
+          const mobile = userObj.mobile || order.userPhone || "N/A";
+          const isDelivered = order.status === 'Delivered';
+
+          // MAPS LINK GENERATION
+          let mapsUrl = "";
+          if(order.coords && order.coords.lat && order.coords.lng) {
+            mapsUrl = `https://www.google.com/maps?q=${order.coords.lat},${order.coords.lng}`;
+          } else if(order.address) {
+            mapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(order.address + ' ' + (order.street || ''))}`;
+          }
+
+          let itemsHtml = "";
+          if(order.items && Array.isArray(order.items)) {
+            order.items.forEach(i => {
+              itemsHtml += `<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:3px;"><span>${i.name} <b>x ${i.qty}</b></span><span>₹${Number(i.price) * Number(i.qty)}</span></div>`;
+            });
+          }
+
+          const cardHtml = `
+            <div class="card">
+              <div class="order-header">
+                <span class="order-id">#${order.id.slice(0, 8)}</span>
+                <span style="font-weight:bold; color:${isDelivered?'#2e7d32':'#e65100'}">${order.status || 'Pending'}</span>
+              </div>
+
+              <div class="info-group"><strong>👤 ग्राहक:</strong> ${order.userName || 'N/A'}</div>
+              <div class="info-group"><strong>📞 मोबाइल:</strong> <a href="tel:${mobile}" style="color:#d84315; font-weight:bold;">${mobile}</a></div>
+              
+              <div class="items-box">
+                <strong style="font-size:12px; color:#555;">आइटम्स:</strong>
+                ${itemsHtml}
+                <hr style="margin:5px 0;">
+                <div style="display:flex; justify-content:space-between; font-weight:bold; color:#2e7d32;">
+                  <span>कुल मूल्य:</span><span>₹${order.totalPrice || 0}</span>
+                </div>
+              </div>
+
+              <div class="info-group"><strong>🏠 गली:</strong> ${order.street || 'N/A'}</div>
+              <div class="info-group"><strong>📍 पूरा पता:</strong> ${order.address || 'N/A'}</div>
+              
+              ${mapsUrl ? `
+                <a href="${mapsUrl}" target="_blank" class="btn-maps">
+                  📍 Google Maps पर लोकेशन खोलें
+                </a>
+              ` : ''}
+
+              ${!isDelivered ? `
+                <div class="otp-verify-box">
+                  <span style="font-size:12px; font-weight:bold;">Delivery OTP:</span>
+                  <input type="text" id="otp-${order.id}" class="otp-input" placeholder="4-Digit OTP">
+                  <button class="btn btn-success btn-sm" onclick="verifyOtp('${order.id}', '${order.deliveryOtp}')">Confirm Delivered</button>
+                </div>
+              ` : ''}
+            </div>`;
+
+          if(!isDelivered) {
+            newCount++;
+            newContainer.innerHTML += cardHtml;
+          } else {
+            historyContainer.innerHTML += cardHtml;
+          }
+        });
+
+        document.getElementById('new-count-badge').innerText = newCount;
+        if(newCount === 0) newContainer.innerHTML = "<p style='text-align:center; padding:20px; color:#777;'>इस होटल का कोई नया ऑर्डर नहीं है।</p>";
+        if(historyContainer.children.length === 0) historyContainer.innerHTML = "<p style='text-align:center; padding:20px; color:#777;'>कोई ऑर्डर इतिहास नहीं है।</p>";
+      });
+    }
+
+    function verifyOtp(orderId, correctOtp) {
+      const inputOtp = document.getElementById(`otp-${orderId}`).value.trim();
+      if(!inputOtp) { alert("OTP भरें!"); return; }
+
+      if(inputOtp === correctOtp) {
+        db.ref('orders/' + orderId).update({
+          status: 'Delivered',
+          deliveredAt: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => alert("ऑर्डर Delivered मार्क हो गया है!"));
+      } else alert("गलत OTP!");
+    }
+  </script>
+</body>
+</html>
